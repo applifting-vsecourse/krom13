@@ -8,9 +8,21 @@ export const quackUserSchema = z.object({
   username: z.string(),
 })
 
+export const MOODS = ["happy", "sad", "angry", "silly"] as const
+export const MOOD_EMOJI = {
+  happy: "😊",
+  sad: "😢",
+  angry: "😠",
+  silly: "🤪",
+} as const satisfies Record<(typeof MOODS)[number], string>
+
+export const moodSchema = z.enum(MOODS)
+export type Mood = z.infer<typeof moodSchema>
+
 export const quackSchema = z.object({
   id: z.string(),
   text: z.string(),
+  mood: moodSchema.nullable(),
   userId: z.string(),
   createdAt: z.coerce.date(),
   user: quackUserSchema,

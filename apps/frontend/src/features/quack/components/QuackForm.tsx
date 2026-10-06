@@ -14,8 +14,10 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Textarea } from "@/components/ui/textarea"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { cn } from "@/lib/utils"
 
+import { MOOD_EMOJI, MOODS, moodSchema } from "@/features/quack/api/quackSchemas"
 import { useAddQuack } from "@/features/quack/hooks/useAddQuack"
 
 // Mirrors the server-side DTO (MaxLength(280)) so the user is told before
@@ -28,6 +30,7 @@ const schema = z.object({
     .trim()
     .min(1, "Write something first")
     .max(MAX_LENGTH, `Keep it under ${MAX_LENGTH} characters`),
+  mood: moodSchema.optional(),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -38,14 +41,14 @@ export function QuackForm({ className }: QuackFormProps) {
   const addQuack = useAddQuack()
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { text: "" },
+    defaultValues: { text: "", mood: undefined },
   })
 
   const text = useWatch({ control: form.control, name: "text" })
   const length = text?.length ?? 0
 
   const handleSubmit = (values: FormValues) => {
-    addQuack.mutate({ text: values.text }, { onSuccess: () => form.reset() })
+    addQuack.mutate({ text: values.text, mood: values.mood }, { onSuccess: () => form.reset() })
   }
 
   return (
@@ -74,6 +77,39 @@ export function QuackForm({ className }: QuackFormProps) {
                   disabled={addQuack.isPending}
                   {...field}
                 />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="mood"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Mood (optional)</FormLabel>
+              <FormControl>
+                <ToggleGroup
+                  type="single"
+                  variant="outline"
+                  value={field.value ?? ""}
+                  onValueChange={(value) => field.onChange(value || undefined)}
+                  disabled={addQuack.isPending}
+                  aria-label="Mood"
+                >
+                  {MOODS.map((mood) => (
+                    <ToggleGroupItem
+                      key={mood}
+                      value={mood}
+                      aria-label={mood}
+                      title={mood}
+                      className="px-3 text-lg"
+                    >
+                      {MOOD_EMOJI[mood]}
+                    </ToggleGroupItem>
+                  ))}
+                </ToggleGroup>
               </FormControl>
               <FormMessage />
             </FormItem>
