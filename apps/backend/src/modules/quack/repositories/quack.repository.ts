@@ -32,8 +32,32 @@ const mapPrismaQuackToDomain = (
 export class QuackRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getQuacks(): Promise<Quack[]> {
+  /**
+   * With `words`, a quack matches when ONE of its text, author name or author
+   * username contains every word (case-insensitive). Prisma's `contains`
+   * escapes %, _ and \, so the words are matched literally.
+   */
+  async getQuacks(search?: { words: string[] }): Promise<Quack[]> {
     const quacks = await this.prisma.quack.findMany({
+      where: search && {
+        OR: [
+          {
+            AND: search.words.map((word) => ({
+              text: { contains: word, mode: 'insensitive' },
+            })),
+          },
+          {
+            AND: search.words.map((word) => ({
+              user: { name: { contains: word, mode: 'insensitive' } },
+            })),
+          },
+          {
+            AND: search.words.map((word) => ({
+              user: { username: { contains: word, mode: 'insensitive' } },
+            })),
+          },
+        ],
+      },
       include: { user: true },
       orderBy: { createdAt: 'desc' },
     });

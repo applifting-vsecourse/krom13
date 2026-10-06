@@ -35,6 +35,22 @@ describe("QuackList", () => {
     expect(screen.getAllByText("silly")).toHaveLength(1)
   })
 
+  it("names the search and offers a working clear button when nothing matches", async () => {
+    const onClearSearch = vi.fn()
+    render(
+      <QuackList
+        quacks={[]}
+        searchQuery="pond"
+        onClearSearch={onClearSearch}
+      />,
+    )
+
+    expect(screen.getByText(/No quacks match "pond"/)).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole("button", { name: "Clear" }))
+    expect(onClearSearch).toHaveBeenCalledOnce()
+  })
+
   it("shows an error with a working reload button", async () => {
     const onReload = vi.fn()
     render(
