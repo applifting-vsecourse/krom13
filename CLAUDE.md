@@ -30,6 +30,18 @@ The CLI puts `shadow-xs`/`shadow-sm` on inputs, textareas and cards. [`DESIGN.md
 
 A short, optional choice (like a quack's mood) is a `ToggleGroup type="single"` of emoji buttons, not a `Select`. Clicking the selected item clears it, so "no value" needs no empty option. Each item gets an `aria-label`, and the emoji map lives next to the zod schema (`MOOD_EMOJI`).
 
+### User stories
+
+When working on a user story, write it up in `story.md` and ask questions until it is ready. A story is ready when:
+
+- it says **who** wants it, **what** they get and **why**
+- every acceptance criterion can be **checked in the browser**, yes or no
+- it says **what's out of scope**
+- it covers what happens when **there's nothing to show**
+- the agent has **no open questions left**
+
+Don't start implementing a story until all five hold.
+
 ### The app is already running
 
 Assume the dev servers are up. If something is listening on the app's ports, that is this application: use it. Don't start a second instance, don't restart it, don't run `pnpm dev`.
