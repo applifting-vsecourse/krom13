@@ -29,6 +29,28 @@ describe('QuacksService', () => {
     expect(repository.getQuacks).toHaveBeenCalledTimes(1);
   });
 
+  it('ignores a search shorter than 2 characters', async () => {
+    const repository = mock<QuackRepository>();
+    repository.getQuacks.mockResolvedValue([]);
+
+    const service = new QuacksService(repository);
+    await service.getQuacks(' a ');
+
+    expect(repository.getQuacks).toHaveBeenCalledWith();
+  });
+
+  it('searches for every trimmed word', async () => {
+    const repository = mock<QuackRepository>();
+    repository.getQuacks.mockResolvedValue([aQuack()]);
+
+    const service = new QuacksService(repository);
+    await expect(service.getQuacks('  duck   pond ')).resolves.toHaveLength(1);
+
+    expect(repository.getQuacks).toHaveBeenCalledWith({
+      words: ['duck', 'pond'],
+    });
+  });
+
   it('creates a quack owned by the signed-in user', async () => {
     const created = aQuack({ id: 'q2', text: 'hello' });
     const repository = mock<QuackRepository>();
