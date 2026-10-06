@@ -13,17 +13,11 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { cn } from "@/lib/utils"
 
-import { MOODS, moodSchema } from "@/features/quack/api/quackSchemas"
+import { MOOD_EMOJI, MOODS, moodSchema } from "@/features/quack/api/quackSchemas"
 import { useAddQuack } from "@/features/quack/hooks/useAddQuack"
 
 // Mirrors the server-side DTO (MaxLength(280)) so the user is told before
@@ -95,28 +89,28 @@ export function QuackForm({ className }: QuackFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Mood (optional)</FormLabel>
-              <Select
-                value={field.value ?? ""}
-                onValueChange={field.onChange}
-                disabled={addQuack.isPending}
-              >
-                <FormControl>
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="No mood" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
+              <FormControl>
+                <ToggleGroup
+                  type="single"
+                  variant="outline"
+                  value={field.value ?? ""}
+                  onValueChange={(value) => field.onChange(value || undefined)}
+                  disabled={addQuack.isPending}
+                  aria-label="Mood"
+                >
                   {MOODS.map((mood) => (
-                    <SelectItem
+                    <ToggleGroupItem
                       key={mood}
                       value={mood}
-                      className="capitalize"
+                      aria-label={mood}
+                      title={mood}
+                      className="px-3 text-lg"
                     >
-                      {mood}
-                    </SelectItem>
+                      {MOOD_EMOJI[mood]}
+                    </ToggleGroupItem>
                   ))}
-                </SelectContent>
-              </Select>
+                </ToggleGroup>
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}

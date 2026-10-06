@@ -1,7 +1,7 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { formatDate } from "@/lib/date"
 
-import type { Quack } from "@/features/quack/api/quackSchemas"
+import { MOOD_EMOJI, type Quack } from "@/features/quack/api/quackSchemas"
 import { UsersName } from "@/features/quack/components/UsersName"
 import { UsersUserName } from "@/features/quack/components/UsersUserName"
 
@@ -33,7 +33,7 @@ export function QuackItem({ quack }: QuackItemProps) {
         </div>
         {quack.mood ? (
           <span className="w-fit rounded-md border border-border px-2 text-xs text-muted-foreground">
-            {quack.mood}
+            <span aria-hidden="true">{MOOD_EMOJI[quack.mood]}</span> {quack.mood}
           </span>
         ) : null}
         <p className="text-sm break-words whitespace-pre-line">{quack.text}</p>
