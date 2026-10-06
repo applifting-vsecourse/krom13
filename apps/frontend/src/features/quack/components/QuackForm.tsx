@@ -13,9 +13,17 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 
+import { MOODS, moodSchema } from "@/features/quack/api/quackSchemas"
 import { useAddQuack } from "@/features/quack/hooks/useAddQuack"
 
 // Mirrors the server-side DTO (MaxLength(280)) so the user is told before
@@ -28,6 +36,7 @@ const schema = z.object({
     .trim()
     .min(1, "Write something first")
     .max(MAX_LENGTH, `Keep it under ${MAX_LENGTH} characters`),
+  mood: moodSchema.optional(),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -38,14 +47,14 @@ export function QuackForm({ className }: QuackFormProps) {
   const addQuack = useAddQuack()
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { text: "" },
+    defaultValues: { text: "", mood: undefined },
   })
 
   const text = useWatch({ control: form.control, name: "text" })
   const length = text?.length ?? 0
 
   const handleSubmit = (values: FormValues) => {
-    addQuack.mutate({ text: values.text }, { onSuccess: () => form.reset() })
+    addQuack.mutate({ text: values.text, mood: values.mood }, { onSuccess: () => form.reset() })
   }
 
   return (
@@ -75,6 +84,39 @@ export function QuackForm({ className }: QuackFormProps) {
                   {...field}
                 />
               </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="mood"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Mood (optional)</FormLabel>
+              <Select
+                value={field.value ?? ""}
+                onValueChange={field.onChange}
+                disabled={addQuack.isPending}
+              >
+                <FormControl>
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="No mood" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {MOODS.map((mood) => (
+                    <SelectItem
+                      key={mood}
+                      value={mood}
+                      className="capitalize"
+                    >
+                      {mood}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}
