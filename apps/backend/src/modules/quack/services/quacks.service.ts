@@ -12,13 +12,13 @@ export class QuacksService {
 
   constructor(private readonly quackRepository: QuackRepository) {}
 
-  async getQuacks(query?: string): Promise<Quack[]> {
+  async getQuacks(user: Identity, query?: string): Promise<Quack[]> {
     const trimmed = query?.trim() ?? '';
     if (trimmed.length < MIN_SEARCH_LENGTH) {
-      return this.quackRepository.getQuacks();
+      return this.quackRepository.getQuacks(user.id);
     }
 
-    const quacks = await this.quackRepository.getQuacks({
+    const quacks = await this.quackRepository.getQuacks(user.id, {
       words: trimmed.split(/\s+/),
     });
     // Length and count only — what people type is not stored.
@@ -30,11 +30,12 @@ export class QuacksService {
 
   async createQuack(
     user: Identity,
-    quackData: { text: string; mood?: Mood },
+    quackData: { text: string; mood?: Mood; pollOptions?: string[] },
   ): Promise<Quack> {
     return this.quackRepository.createQuack({
       text: quackData.text,
       mood: quackData.mood,
+      pollOptions: quackData.pollOptions,
       // the author is taken from the session, never from the request body
       userId: user.id,
     });

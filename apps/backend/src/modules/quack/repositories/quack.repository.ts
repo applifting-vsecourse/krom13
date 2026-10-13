@@ -1,13 +1,24 @@
 import { PrismaService } from '@/core/prisma/prisma.service';
 import {
+  Poll as PrismaPoll,
+  PollOption as PrismaPollOption,
   Quack as PrismaQuack,
   User as PrismaUser,
 } from '@/generated/prisma/client';
+import { buildPollResults } from '@/modules/quack/domain/poll';
 import { Mood, Quack } from '@/modules/quack/domain/quack';
 import { Injectable } from '@nestjs/common';
 
+type PrismaQuackWithPoll = PrismaQuack & {
+  user?: PrismaUser;
+  poll?: (PrismaPoll & { options: PrismaPollOption[] }) | null;
+};
+
+const POLL_INCLUDE = { options: true } as const;
+
 const mapPrismaQuackToDomain = (
-  quack: PrismaQuack & { user?: PrismaUser },
+  quack: PrismaQuackWithPoll,
+  poll: Quack['poll'] = null,
 ): Quack => ({
   id: quack.id,
   text: quack.text,
@@ -22,6 +33,7 @@ const mapPrismaQuackToDomain = (
         username: quack.user.username ?? '',
       }
     : undefined,
+  poll,
 });
 
 /**
@@ -37,7 +49,10 @@ export class QuackRepository {
    * username contains every word (case-insensitive). Prisma's `contains`
    * escapes %, _ and \, so the words are matched literally.
    */
-  async getQuacks(search?: { words: string[] }): Promise<Quack[]> {
+  async getQuacks(
+    viewerId: string,
+    search?: { words: string[] },
+  ): Promise<Quack[]> {
     const quacks = await this.prisma.quack.findMany({
       where: search && {
         OR: [
@@ -58,25 +73,91 @@ export class QuackRepository {
           },
         ],
       },
-      include: { user: true },
+      include: { user: true, poll: { include: POLL_INCLUDE } },
       orderBy: { createdAt: 'desc' },
     });
-    return quacks.map(mapPrismaQuackToDomain);
+    return this.attachPolls(quacks, viewerId);
+  }
+
+  async getQuack(id: string, viewerId: string): Promise<Quack | null> {
+    const quack = await this.prisma.quack.findUnique({
+      where: { id },
+      include: { user: true, poll: { include: POLL_INCLUDE } },
+    });
+    if (!quack) return null;
+    const [mapped] = await this.attachPolls([quack], viewerId);
+    return mapped;
   }
 
   async createQuack(createQuackData: {
     text: string;
     mood?: Mood;
     userId: string;
+    pollOptions?: string[];
   }): Promise<Quack> {
     const quack = await this.prisma.quack.create({
       data: {
         text: createQuackData.text,
         mood: createQuackData.mood,
         user: { connect: { id: createQuackData.userId } },
+        poll: createQuackData.pollOptions && {
+          create: {
+            options: {
+              create: createQuackData.pollOptions.map((text, position) => ({
+                text,
+                position,
+              })),
+            },
+          },
+        },
       },
-      include: { user: true },
+      include: { user: true, poll: { include: POLL_INCLUDE } },
     });
-    return mapPrismaQuackToDomain(quack);
+    const [mapped] = await this.attachPolls([quack], createQuackData.userId);
+    return mapped;
+  }
+
+  /**
+   * Counts every poll on the page with one grouped query and finds the
+   * viewer's own votes with another — no query per poll.
+   */
+  private async attachPolls(
+    quacks: PrismaQuackWithPoll[],
+    viewerId: string,
+  ): Promise<Quack[]> {
+    const pollIds = quacks.filter((quack) => quack.poll).map((q) => q.id);
+    if (pollIds.length === 0) {
+      return quacks.map((quack) => mapPrismaQuackToDomain(quack));
+    }
+
+    const [counts, mine] = await Promise.all([
+      this.prisma.pollVote.groupBy({
+        by: ['quackId', 'optionId'],
+        where: { quackId: { in: pollIds } },
+        _count: { _all: true },
+      }),
+      this.prisma.pollVote.findMany({
+        where: { quackId: { in: pollIds }, userId: viewerId },
+      }),
+    ]);
+    const myOptionByPoll = new Map(mine.map((v) => [v.quackId, v.optionId]));
+
+    return quacks.map((quack) => {
+      if (!quack.poll) return mapPrismaQuackToDomain(quack);
+      const pollCounts = new Map(
+        counts
+          .filter((count) => count.quackId === quack.id)
+          .map((count) => [count.optionId, count._count._all]),
+      );
+      return mapPrismaQuackToDomain(
+        quack,
+        buildPollResults({
+          options: quack.poll.options,
+          counts: pollCounts,
+          myOptionId: myOptionByPoll.get(quack.id) ?? null,
+          closedAt: quack.poll.closedAt,
+        }),
+      );
+    });
   }
 }

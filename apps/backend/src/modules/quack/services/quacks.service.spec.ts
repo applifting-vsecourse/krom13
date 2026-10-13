@@ -17,6 +17,8 @@ const aQuack = (overrides: Partial<Quack> = {}): Quack => ({
   ...overrides,
 });
 
+const viewer = { id: 'u1' } as Identity;
+
 describe('QuacksService', () => {
   it('returns quacks from the repository', async () => {
     const quacks = [aQuack()];
@@ -25,7 +27,7 @@ describe('QuacksService', () => {
 
     const service = new QuacksService(repository);
 
-    await expect(service.getQuacks()).resolves.toEqual(quacks);
+    await expect(service.getQuacks(viewer)).resolves.toEqual(quacks);
     expect(repository.getQuacks).toHaveBeenCalledTimes(1);
   });
 
@@ -34,9 +36,9 @@ describe('QuacksService', () => {
     repository.getQuacks.mockResolvedValue([]);
 
     const service = new QuacksService(repository);
-    await service.getQuacks(' a ');
+    await service.getQuacks(viewer, ' a ');
 
-    expect(repository.getQuacks).toHaveBeenCalledWith();
+    expect(repository.getQuacks).toHaveBeenCalledWith('u1');
   });
 
   it('searches for every trimmed word', async () => {
@@ -44,9 +46,11 @@ describe('QuacksService', () => {
     repository.getQuacks.mockResolvedValue([aQuack()]);
 
     const service = new QuacksService(repository);
-    await expect(service.getQuacks('  duck   pond ')).resolves.toHaveLength(1);
+    await expect(
+      service.getQuacks(viewer, '  duck   pond '),
+    ).resolves.toHaveLength(1);
 
-    expect(repository.getQuacks).toHaveBeenCalledWith({
+    expect(repository.getQuacks).toHaveBeenCalledWith('u1', {
       words: ['duck', 'pond'],
     });
   });
@@ -66,6 +70,7 @@ describe('QuacksService', () => {
     expect(repository.createQuack).toHaveBeenCalledWith({
       text: 'hello',
       mood: undefined,
+      pollOptions: undefined,
       userId: 'u1',
     });
   });
@@ -81,6 +86,25 @@ describe('QuacksService', () => {
     expect(repository.createQuack).toHaveBeenCalledWith({
       text: 'hello',
       mood: 'silly',
+      pollOptions: undefined,
+      userId: 'u1',
+    });
+  });
+
+  it('passes poll answers through to the repository', async () => {
+    const repository = mock<QuackRepository>();
+    repository.createQuack.mockResolvedValue(aQuack());
+
+    const service = new QuacksService(repository);
+    await service.createQuack(viewer, {
+      text: 'Lunch?',
+      pollOptions: ['Pizza', 'Sushi'],
+    });
+
+    expect(repository.createQuack).toHaveBeenCalledWith({
+      text: 'Lunch?',
+      mood: undefined,
+      pollOptions: ['Pizza', 'Sushi'],
       userId: 'u1',
     });
   });
