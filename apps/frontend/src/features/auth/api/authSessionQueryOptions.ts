@@ -1,6 +1,7 @@
 import { queryOptions } from "@tanstack/react-query"
 
 import { authKeys } from "@/lib/auth-keys"
+import { moodSchema, type Mood } from "@/lib/moods"
 
 import { authClient } from "@/features/auth/lib/auth-client"
 
@@ -9,6 +10,8 @@ export type SessionUser = {
   email: string
   name: string
   username: string
+  bio: string
+  defaultMood?: Mood
   role?: string
 }
 
@@ -26,6 +29,8 @@ export const authSessionQueryOptions = () =>
 
       const user = data.user as typeof data.user & {
         username?: string | null
+        bio?: string | null
+        defaultMood?: string | null
         role?: string | null
       }
 
@@ -35,6 +40,8 @@ export const authSessionQueryOptions = () =>
           email: user.email,
           name: user.name,
           username: user.username ?? "",
+          bio: user.bio ?? "",
+          defaultMood: moodSchema.safeParse(user.defaultMood).data,
           role: user.role ?? undefined,
         },
       }

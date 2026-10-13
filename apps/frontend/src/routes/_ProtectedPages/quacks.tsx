@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 
+import { useSession } from "@/features/auth/hooks/useSession"
 import {
   MAX_SEARCH_LENGTH,
   MIN_SEARCH_LENGTH,
@@ -20,6 +21,7 @@ export const Route = createFileRoute("/_ProtectedPages/quacks")({
 })
 
 function QuacksPage() {
+  const { user } = useSession()
   const [search, setSearch] = useState("")
   const debouncedSearch = useDebouncedValue(search, 300)
   const quacksQuery = useQuery(quacksQueryOptions(debouncedSearch))
@@ -31,7 +33,10 @@ function QuacksPage() {
       <section className="mx-auto w-full max-w-2xl px-4 py-8">
         <h1 className="mb-4 text-2xl font-semibold tracking-tight">Quacks</h1>
 
-        <QuackForm className="mb-4" />
+        <QuackForm
+          className="mb-4"
+          defaultMood={user?.defaultMood}
+        />
 
         <div className="mb-4 flex flex-col gap-2">
           <Label htmlFor="quack-search">Search quacks</Label>

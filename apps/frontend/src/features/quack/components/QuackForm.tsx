@@ -15,9 +15,9 @@ import {
 } from "@/components/ui/form"
 import { Textarea } from "@/components/ui/textarea"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { MOOD_EMOJI, MOODS, moodSchema, type Mood } from "@/lib/moods"
 import { cn } from "@/lib/utils"
 
-import { MOOD_EMOJI, MOODS, moodSchema } from "@/features/quack/api/quackSchemas"
 import { useAddQuack } from "@/features/quack/hooks/useAddQuack"
 
 // Mirrors the server-side DTO (MaxLength(280)) so the user is told before
@@ -35,13 +35,17 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>
 
-type QuackFormProps = { className?: string }
+type QuackFormProps = {
+  className?: string
+  // The mood from the user's settings; it only pre-selects the picker.
+  defaultMood?: Mood
+}
 
-export function QuackForm({ className }: QuackFormProps) {
+export function QuackForm({ className, defaultMood }: QuackFormProps) {
   const addQuack = useAddQuack()
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { text: "", mood: undefined },
+    defaultValues: { text: "", mood: defaultMood },
   })
 
   const text = useWatch({ control: form.control, name: "text" })
@@ -97,6 +101,7 @@ export function QuackForm({ className }: QuackFormProps) {
                   onValueChange={(value) => field.onChange(value || undefined)}
                   disabled={addQuack.isPending}
                   aria-label="Mood"
+                  rovingFocus={false}
                 >
                   {MOODS.map((mood) => (
                     <ToggleGroupItem

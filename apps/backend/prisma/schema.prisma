@@ -108,6 +108,9 @@ model User {
   username        String? @db.VarChar(50)
   displayUsername String? @db.VarChar(50)
 
+  bio             String? @db.VarChar(160)
+  defaultMood     Mood?
+
   @@unique([email])
   @@unique([username])
   @@map("user")

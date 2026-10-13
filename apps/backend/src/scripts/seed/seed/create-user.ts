@@ -39,7 +39,8 @@ export async function createUser(
   await prisma.user.update({
     where: { id: user.id },
     data: {
-      username,
+      // BetterAuth looks usernames up lowercase, so store them that way.
+      username: username.toLowerCase(),
       role: role as UserRole,
     },
   });
