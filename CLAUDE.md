@@ -30,6 +30,30 @@ The CLI puts `shadow-xs`/`shadow-sm` on inputs, textareas and cards. [`DESIGN.md
 
 A short, optional choice (like a quack's mood) is a `ToggleGroup type="single"` of emoji buttons, not a `Select`. Clicking the selected item clears it, so "no value" needs no empty option. Each item gets an `aria-label`, and the emoji map lives next to the zod schema (`MOOD_EMOJI`).
 
+### Record app-wide rules here
+
+When you hit a rule that applies across the app (not just to the feature at hand), add it to this file in the same change. Rules about how screens look go in [`DESIGN.md`](DESIGN.md) instead.
+
+### Clearable form fields hold `null`, never `undefined`
+
+react-hook-form turns an `undefined` value back into the field's default. Clearing a field that has a default (like the mood picker with a default mood) would silently re-select the default. Store `null` for "nothing chosen" in the form (`schema.nullable()`), and convert to `undefined` only when building the request.
+
+### Features don't import each other
+
+Shared constants and schemas (like `MOODS` and `moodSchema` in `src/lib/moods.ts`) live in `src/lib/`. A route may combine features and pass data down as props. ESLint enforces this.
+
+### Counts and totals are derived on the server
+
+Never keep a running tally in the browser or in a counter column. Count from the stored rows on every read so every viewer sees the same numbers. Rules like "one per person" belong in the database (primary key or unique constraint), not only in the service.
+
+### Instant actions are optimistic with rollback
+
+For actions that should feel instant (like voting): update the TanStack Query cache in `onMutate`, restore the snapshot in `onError`, invalidate in `onSettled`, and show the failure next to the thing that failed with a Retry. Pause any polling while the mutation is in flight.
+
+### Database changes need an integration test
+
+When a guarantee lives in Postgres (locks, constraints), mocks can't prove it. Add a `*.int.spec.ts` that runs when `DATABASE_URL` is set (see `poll.repository.int.spec.ts`).
+
 ### User stories
 
 When working on a user story, write it up in `story.md` and ask questions until it is ready. A story is ready when:
