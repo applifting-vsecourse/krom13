@@ -9,7 +9,10 @@ import { quacksSchema } from "@/features/quack/api/quackSchemas"
 export const MIN_SEARCH_LENGTH = 2
 export const MAX_SEARCH_LENGTH = 100
 
-export const quacksQueryOptions = (search = "") => {
+// Other people's votes show up within this long while the feed is open.
+export const FEED_REFRESH_MS = 10_000
+
+export const quacksQueryOptions = (search = "", { isAutoRefresh = true } = {}) => {
   const q = search.trim().length >= MIN_SEARCH_LENGTH ? search.trim() : ""
 
   return queryOptions({
@@ -18,5 +21,8 @@ export const quacksQueryOptions = (search = "") => {
       quacksSchema.parse(await api.get("quacks", { searchParams: q ? { q } : undefined }).json()),
     // Keep showing the previous results while the next search loads.
     placeholderData: keepPreviousData,
+    // Pausing while a vote is in flight keeps a refresh from overwriting the
+    // instant update. Hidden tabs don't poll; focusing one refetches.
+    refetchInterval: isAutoRefresh ? FEED_REFRESH_MS : false,
   })
 }
