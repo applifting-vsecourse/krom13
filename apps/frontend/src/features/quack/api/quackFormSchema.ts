@@ -16,7 +16,9 @@ export const quackFormSchema = z
       .trim()
       .min(1, "Write something first")
       .max(MAX_LENGTH, `Keep it under ${MAX_LENGTH} characters`),
-    mood: moodSchema.optional(),
+    // null means "no mood". Not undefined: react-hook-form turns undefined back
+    // into the default value, so clearing would re-select the default mood.
+    mood: moodSchema.nullable(),
     isPoll: z.boolean(),
     options: z.array(z.object({ text: z.string() })).max(MAX_POLL_OPTIONS),
   })

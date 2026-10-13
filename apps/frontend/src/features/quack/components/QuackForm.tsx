@@ -37,7 +37,7 @@ export function QuackForm({ className, defaultMood }: QuackFormProps) {
   const addQuack = useAddQuack()
   const form = useForm<QuackFormValues>({
     resolver: zodResolver(quackFormSchema),
-    defaultValues: { text: "", mood: defaultMood, isPoll: false, options: emptyOptions() },
+    defaultValues: { text: "", mood: defaultMood ?? null, isPoll: false, options: emptyOptions() },
   })
 
   const text = useWatch({ control: form.control, name: "text" })
@@ -49,7 +49,7 @@ export function QuackForm({ className, defaultMood }: QuackFormProps) {
     addQuack.mutate(
       {
         text: values.text,
-        mood: values.mood,
+        mood: values.mood ?? undefined,
         poll: values.isPoll
           ? { options: values.options.map((option) => option.text.trim()) }
           : undefined,
@@ -58,7 +58,7 @@ export function QuackForm({ className, defaultMood }: QuackFormProps) {
         onSuccess: () =>
           form.reset({
             text: "",
-            mood: defaultMood,
+            mood: defaultMood ?? null,
             isPoll: false,
             options: emptyOptions(),
           }),
@@ -109,7 +109,7 @@ export function QuackForm({ className, defaultMood }: QuackFormProps) {
                   type="single"
                   variant="outline"
                   value={field.value ?? ""}
-                  onValueChange={(value) => field.onChange(value || undefined)}
+                  onValueChange={(value) => field.onChange(value === "" ? null : value)}
                   disabled={addQuack.isPending}
                   aria-label="Mood"
                   rovingFocus={false}

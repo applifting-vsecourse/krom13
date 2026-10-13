@@ -166,7 +166,7 @@ export function SettingsForm({ saved, onSaved }: SettingsFormProps) {
                   type="single"
                   variant="outline"
                   value={field.value ?? ""}
-                  onValueChange={(value) => field.onChange(value || undefined)}
+                  onValueChange={(value) => field.onChange(value === "" ? null : value)}
                   aria-label="Default mood"
                   rovingFocus={false}
                 >

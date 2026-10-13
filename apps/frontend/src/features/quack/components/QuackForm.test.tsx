@@ -8,11 +8,11 @@ import { QuackForm } from "@/features/quack/components/QuackForm"
 
 vi.mock("@/features/quack/api/addQuack")
 
-function renderForm() {
+function renderForm(defaultMood?: "happy") {
   const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } })
   return render(
     <QueryClientProvider client={client}>
-      <QuackForm />
+      <QuackForm defaultMood={defaultMood} />
     </QueryClientProvider>,
   )
 }
@@ -124,4 +124,30 @@ describe("QuackForm poll", () => {
       poll: undefined,
     })
   })
+})
+
+describe("QuackForm mood", () => {
+  it("starts with the default mood selected", () => {
+    renderForm("happy")
+    expect(screen.getByRole("radio", { name: "happy" })).toBeChecked()
+  })
+
+  it.each(["happy", "silly"])(
+    "clearing %s leaves no mood selected instead of falling back to the default",
+    async (mood) => {
+      const user = userEvent.setup()
+      renderForm("happy")
+      if (mood !== "happy") await user.click(screen.getByRole("radio", { name: mood }))
+
+      await user.click(screen.getByRole("radio", { name: mood }))
+
+      for (const name of ["happy", "sad", "angry", "silly"]) {
+        expect(screen.getByRole("radio", { name })).not.toBeChecked()
+      }
+      await user.type(screen.getByLabelText("New quack"), "hi")
+      await user.click(screen.getByRole("button", { name: "Quack" }))
+      await waitFor(() => expect(addQuack).toHaveBeenCalled())
+      expect(vi.mocked(addQuack).mock.calls[0]?.[0].mood).toBeUndefined()
+    },
+  )
 })
