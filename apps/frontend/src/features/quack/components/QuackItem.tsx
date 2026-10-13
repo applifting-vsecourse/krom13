@@ -3,12 +3,13 @@ import { formatDate } from "@/lib/date"
 import { MOOD_EMOJI } from "@/lib/moods"
 
 import type { Quack } from "@/features/quack/api/quackSchemas"
+import { PollView } from "@/features/quack/components/PollView"
 import { UsersName } from "@/features/quack/components/UsersName"
 import { UsersUserName } from "@/features/quack/components/UsersUserName"
 
-type QuackItemProps = { quack: Quack }
+type QuackItemProps = { quack: Quack; currentUserId?: string }
 
-export function QuackItem({ quack }: QuackItemProps) {
+export function QuackItem({ quack, currentUserId }: QuackItemProps) {
   const { name, username } = quack.user
 
   const initials = name
@@ -38,6 +39,13 @@ export function QuackItem({ quack }: QuackItemProps) {
           </span>
         ) : null}
         <p className="text-sm break-words whitespace-pre-line">{quack.text}</p>
+        {quack.poll ? (
+          <PollView
+            quackId={quack.id}
+            poll={quack.poll}
+            canClose={currentUserId === quack.userId}
+          />
+        ) : null}
       </div>
     </article>
   )

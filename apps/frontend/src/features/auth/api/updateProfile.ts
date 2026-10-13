@@ -15,7 +15,7 @@ export async function updateProfile(values: ProfileValues) {
     username: values.username,
     name: values.name,
     bio: values.bio.trim() === "" ? null : values.bio.trim(),
-    defaultMood: values.defaultMood ?? null,
+    defaultMood: values.defaultMood,
   })
   if (error) throw new ProfileUpdateError(error.message ?? "Could not save settings", error.code)
 }

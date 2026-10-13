@@ -23,7 +23,7 @@ function SettingsPage() {
             username: user.username,
             name: user.name,
             bio: user.bio,
-            defaultMood: user.defaultMood,
+            defaultMood: user.defaultMood ?? null,
           }}
         />
       </section>

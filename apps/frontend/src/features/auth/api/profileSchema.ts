@@ -20,7 +20,8 @@ export const profileSchema = z.object({
     .min(1, "Display name is required")
     .max(MAX_NAME_LENGTH, `Keep it under ${MAX_NAME_LENGTH} characters`),
   bio: z.string().max(MAX_BIO_LENGTH, `Keep it under ${MAX_BIO_LENGTH} characters`),
-  defaultMood: moodSchema.optional(),
+  // null means "none" (see the note in quackFormSchema).
+  defaultMood: moodSchema.nullable(),
 })
 
 export type ProfileValues = z.infer<typeof profileSchema>

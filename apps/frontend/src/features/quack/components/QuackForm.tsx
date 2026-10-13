@@ -1,7 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Loader2 } from "lucide-react"
 import { useForm, useWatch } from "react-hook-form"
-import { z } from "zod"
 
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -14,26 +13,19 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Textarea } from "@/components/ui/textarea"
+import { Toggle } from "@/components/ui/toggle"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { MOOD_EMOJI, MOODS, moodSchema, type Mood } from "@/lib/moods"
+import { MOOD_EMOJI, MOODS, type Mood } from "@/lib/moods"
 import { cn } from "@/lib/utils"
 
+import {
+  emptyOptions,
+  MAX_LENGTH,
+  quackFormSchema,
+  type QuackFormValues,
+} from "@/features/quack/api/quackFormSchema"
+import { PollFields } from "@/features/quack/components/PollFields"
 import { useAddQuack } from "@/features/quack/hooks/useAddQuack"
-
-// Mirrors the server-side DTO (MaxLength(280)) so the user is told before
-// the request is made — the server still validates independently.
-const MAX_LENGTH = 280
-
-const schema = z.object({
-  text: z
-    .string()
-    .trim()
-    .min(1, "Write something first")
-    .max(MAX_LENGTH, `Keep it under ${MAX_LENGTH} characters`),
-  mood: moodSchema.optional(),
-})
-
-type FormValues = z.infer<typeof schema>
 
 type QuackFormProps = {
   className?: string
@@ -43,16 +35,35 @@ type QuackFormProps = {
 
 export function QuackForm({ className, defaultMood }: QuackFormProps) {
   const addQuack = useAddQuack()
-  const form = useForm<FormValues>({
-    resolver: zodResolver(schema),
-    defaultValues: { text: "", mood: defaultMood },
+  const form = useForm<QuackFormValues>({
+    resolver: zodResolver(quackFormSchema),
+    defaultValues: { text: "", mood: defaultMood ?? null, isPoll: false, options: emptyOptions() },
   })
 
   const text = useWatch({ control: form.control, name: "text" })
   const length = text?.length ?? 0
 
-  const handleSubmit = (values: FormValues) => {
-    addQuack.mutate({ text: values.text, mood: values.mood }, { onSuccess: () => form.reset() })
+  const isPoll = useWatch({ control: form.control, name: "isPoll" })
+
+  const handleSubmit = (values: QuackFormValues) => {
+    addQuack.mutate(
+      {
+        text: values.text,
+        mood: values.mood ?? undefined,
+        poll: values.isPoll
+          ? { options: values.options.map((option) => option.text.trim()) }
+          : undefined,
+      },
+      {
+        onSuccess: () =>
+          form.reset({
+            text: "",
+            mood: defaultMood ?? null,
+            isPoll: false,
+            options: emptyOptions(),
+          }),
+      },
+    )
   }
 
   return (
@@ -98,7 +109,7 @@ export function QuackForm({ className, defaultMood }: QuackFormProps) {
                   type="single"
                   variant="outline"
                   value={field.value ?? ""}
-                  onValueChange={(value) => field.onChange(value || undefined)}
+                  onValueChange={(value) => field.onChange(value === "" ? null : value)}
                   disabled={addQuack.isPending}
                   aria-label="Mood"
                   rovingFocus={false}
@@ -120,6 +131,31 @@ export function QuackForm({ className, defaultMood }: QuackFormProps) {
             </FormItem>
           )}
         />
+
+        <FormField
+          control={form.control}
+          name="isPoll"
+          render={({ field }) => (
+            <FormItem>
+              <Toggle
+                variant="outline"
+                size="sm"
+                pressed={field.value}
+                onPressedChange={field.onChange}
+                disabled={addQuack.isPending}
+              >
+                Add poll
+              </Toggle>
+            </FormItem>
+          )}
+        />
+
+        {isPoll ? (
+          <PollFields
+            control={form.control}
+            isDisabled={addQuack.isPending}
+          />
+        ) : null}
 
         <div className="flex items-center justify-end gap-3">
           <span

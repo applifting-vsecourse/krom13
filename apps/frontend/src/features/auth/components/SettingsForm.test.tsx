@@ -12,7 +12,7 @@ vi.mock("@/features/auth/lib/auth-client", () => ({
 
 const updateUser = vi.mocked(authClient.updateUser)
 
-const saved = { username: "duck", name: "Duck", bio: "", defaultMood: undefined }
+const saved = { username: "duck", name: "Duck", bio: "", defaultMood: null }
 
 function renderForm() {
   const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } })

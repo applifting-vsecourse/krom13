@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { useQuery } from "@tanstack/react-query"
+import { useIsMutating, useQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 
 import { Seo } from "@/components/Seo"
@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 
 import { useSession } from "@/features/auth/hooks/useSession"
+import { quackKeys } from "@/features/quack/api/quackKeys"
 import {
   MAX_SEARCH_LENGTH,
   MIN_SEARCH_LENGTH,
@@ -24,7 +25,10 @@ function QuacksPage() {
   const { user } = useSession()
   const [search, setSearch] = useState("")
   const debouncedSearch = useDebouncedValue(search, 300)
-  const quacksQuery = useQuery(quacksQueryOptions(debouncedSearch))
+  // Don't refresh the feed while a vote is in flight, or it could briefly
+  // undo the instant update.
+  const isVoting = useIsMutating({ mutationKey: quackKeys.vote() }) > 0
+  const quacksQuery = useQuery(quacksQueryOptions(debouncedSearch, { isAutoRefresh: !isVoting }))
   const clearSearch = () => setSearch("")
 
   return (
@@ -56,6 +60,7 @@ function QuacksPage() {
           }
           onClearSearch={clearSearch}
           quacks={quacksQuery.data ?? []}
+          currentUserId={user?.id}
           isLoading={quacksQuery.isLoading}
           error={quacksQuery.error ?? undefined}
           // Only the error state offers a retry — posting invalidates the list,

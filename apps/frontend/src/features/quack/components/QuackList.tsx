@@ -13,6 +13,7 @@ type QuackListProps = {
   searchQuery?: string
   onClearSearch?: () => void
   onReload?: () => void
+  currentUserId?: string
 }
 
 export function QuackList({
@@ -22,6 +23,7 @@ export function QuackList({
   onReload,
   searchQuery,
   onClearSearch,
+  currentUserId,
 }: QuackListProps) {
   return (
     <div className="flex flex-col">
@@ -78,6 +80,7 @@ export function QuackList({
         <QuackItem
           key={quack.id}
           quack={quack}
+          currentUserId={currentUserId}
         />
       ))}
     </div>
