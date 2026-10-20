@@ -48,26 +48,29 @@ export class QuackRepository {
    * With `words`, a quack matches when ONE of its text, author name or author
    * username contains every word (case-insensitive). Prisma's `contains`
    * escapes %, _ and \, so the words are matched literally.
+   * With `authorId`, only that person's quacks are returned.
    */
   async getQuacks(
     viewerId: string,
-    search?: { words: string[] },
+    filter?: { words?: string[]; authorId?: string },
   ): Promise<Quack[]> {
+    const words = filter?.words;
     const quacks = await this.prisma.quack.findMany({
-      where: search && {
-        OR: [
+      where: {
+        userId: filter?.authorId,
+        OR: words && [
           {
-            AND: search.words.map((word) => ({
+            AND: words.map((word) => ({
               text: { contains: word, mode: 'insensitive' },
             })),
           },
           {
-            AND: search.words.map((word) => ({
+            AND: words.map((word) => ({
               user: { name: { contains: word, mode: 'insensitive' } },
             })),
           },
           {
-            AND: search.words.map((word) => ({
+            AND: words.map((word) => ({
               user: { username: { contains: word, mode: 'insensitive' } },
             })),
           },
@@ -87,6 +90,18 @@ export class QuackRepository {
     if (!quack) return null;
     const [mapped] = await this.attachPolls([quack], viewerId);
     return mapped;
+  }
+
+  /**
+   * Deletes the quack only when `userId` wrote it, in one statement, so the
+   * author check and the delete can't be separated by a race. The poll, its
+   * answers and its votes go with it (cascading foreign keys).
+   */
+  async deleteOwnQuack(id: string, userId: string): Promise<boolean> {
+    const { count } = await this.prisma.quack.deleteMany({
+      where: { id, userId },
+    });
+    return count > 0;
   }
 
   async createQuack(createQuackData: {

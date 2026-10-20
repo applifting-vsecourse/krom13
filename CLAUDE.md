@@ -50,6 +50,14 @@ Never keep a running tally in the browser or in a counter column. Count from the
 
 For actions that should feel instant (like voting): update the TanStack Query cache in `onMutate`, restore the snapshot in `onError`, invalidate in `onSettled`, and show the failure next to the thing that failed with a Retry. Pause any polling while the mutation is in flight.
 
+### Ownership is checked in the write itself
+
+"Only the author can change X" is enforced on the server by putting the owner in the statement (`deleteMany({ where: { id, userId } })`), not by reading the row, comparing, then writing. Look the row up afterwards only to tell 403 from 404. Hiding a button is never the rule.
+
+### Filtering happens on the server
+
+A feed filter (like Mine) is a query parameter the server applies, and it is part of the TanStack Query key. Never fetch everything and hide rows in the browser. Filter state that a person would want to keep on reload or share lives in the URL as a validated search param.
+
 ### Database changes need an integration test
 
 When a guarantee lives in Postgres (locks, constraints), mocks can't prove it. Add a `*.int.spec.ts` that runs when `DATABASE_URL` is set (see `poll.repository.int.spec.ts`).

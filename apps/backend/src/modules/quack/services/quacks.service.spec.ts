@@ -63,6 +63,56 @@ describe('QuacksService', () => {
     });
   });
 
+  it('lists only my quacks when asked', async () => {
+    const repository = mock<QuackRepository>();
+    repository.getQuacks.mockResolvedValue([aQuack()]);
+
+    const service = new QuacksService(repository, mock<PollRepository>());
+    await service.getQuacks(viewer, undefined, true);
+    expect(repository.getQuacks).toHaveBeenCalledWith('u1', {
+      authorId: 'u1',
+    });
+
+    await service.getQuacks(viewer, 'duck', true);
+    expect(repository.getQuacks).toHaveBeenLastCalledWith('u1', {
+      words: ['duck'],
+      authorId: 'u1',
+    });
+  });
+
+  describe('deleting', () => {
+    it('deletes my own quack', async () => {
+      const repository = mock<QuackRepository>();
+      repository.deleteOwnQuack.mockResolvedValue(true);
+
+      const service = new QuacksService(repository, mock<PollRepository>());
+      await expect(service.deleteQuack(viewer, 'q1')).resolves.toBeUndefined();
+      expect(repository.deleteOwnQuack).toHaveBeenCalledWith('q1', 'u1');
+    });
+
+    it("answers 403 for someone else's quack", async () => {
+      const repository = mock<QuackRepository>();
+      repository.deleteOwnQuack.mockResolvedValue(false);
+      repository.getQuack.mockResolvedValue(aQuack({ userId: 'u2' }));
+
+      const service = new QuacksService(repository, mock<PollRepository>());
+      await expect(service.deleteQuack(viewer, 'q1')).rejects.toBeInstanceOf(
+        ForbiddenException,
+      );
+    });
+
+    it('answers 404 for a quack that does not exist', async () => {
+      const repository = mock<QuackRepository>();
+      repository.deleteOwnQuack.mockResolvedValue(false);
+      repository.getQuack.mockResolvedValue(null);
+
+      const service = new QuacksService(repository, mock<PollRepository>());
+      await expect(service.deleteQuack(viewer, 'q1')).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+    });
+  });
+
   it('creates a quack owned by the signed-in user', async () => {
     const created = aQuack({ id: 'q2', text: 'hello' });
     const repository = mock<QuackRepository>();

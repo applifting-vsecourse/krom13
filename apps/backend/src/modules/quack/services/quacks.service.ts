@@ -24,14 +24,22 @@ export class QuacksService {
     private readonly pollRepository: PollRepository,
   ) {}
 
-  async getQuacks(user: Identity, query?: string): Promise<Quack[]> {
+  async getQuacks(
+    user: Identity,
+    query?: string,
+    onlyMine = false,
+  ): Promise<Quack[]> {
+    const authorId = onlyMine ? user.id : undefined;
     const trimmed = query?.trim() ?? '';
     if (trimmed.length < MIN_SEARCH_LENGTH) {
-      return this.quackRepository.getQuacks(user.id);
+      return authorId
+        ? this.quackRepository.getQuacks(user.id, { authorId })
+        : this.quackRepository.getQuacks(user.id);
     }
 
     const quacks = await this.quackRepository.getQuacks(user.id, {
       words: trimmed.split(/\s+/),
+      ...(authorId && { authorId }),
     });
     // Length and count only — what people type is not stored.
     this.logger.log(
@@ -51,6 +59,14 @@ export class QuacksService {
       // the author is taken from the session, never from the request body
       userId: user.id,
     });
+  }
+
+  async deleteQuack(user: Identity, quackId: string): Promise<void> {
+    if (await this.quackRepository.deleteOwnQuack(quackId, user.id)) return;
+    // Nothing was deleted: either it isn't there or it isn't theirs.
+    const quack = await this.quackRepository.getQuack(quackId, user.id);
+    if (!quack) throw new NotFoundException('Quack not found');
+    throw new ForbiddenException('Only the author can delete a quack');
   }
 
   async vote(

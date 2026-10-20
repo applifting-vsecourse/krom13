@@ -13,6 +13,9 @@ type QuackListProps = {
   searchQuery?: string
   onClearSearch?: () => void
   onReload?: () => void
+  // On the Mine tab an empty feed offers to write the first quack.
+  isMineTab?: boolean
+  onWriteQuack?: () => void
   currentUserId?: string
 }
 
@@ -24,6 +27,8 @@ export function QuackList({
   searchQuery,
   onClearSearch,
   currentUserId,
+  isMineTab,
+  onWriteQuack,
 }: QuackListProps) {
   return (
     <div className="flex flex-col">
@@ -66,6 +71,19 @@ export function QuackList({
                 onClick={onClearSearch}
               >
                 Clear
+              </Button>
+            ) : null}
+          </div>
+        ) : isMineTab ? (
+          <div className="flex flex-col items-center gap-3 py-8 text-sm text-muted-foreground">
+            <p>You haven&apos;t posted any quacks yet.</p>
+            {onWriteQuack ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onWriteQuack}
+              >
+                Write a quack
               </Button>
             ) : null}
           </div>

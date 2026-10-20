@@ -68,4 +68,32 @@ describe("QuackList", () => {
     await userEvent.click(screen.getByRole("button", { name: /reload/i }))
     expect(onReload).toHaveBeenCalledOnce()
   })
+
+  it("on Mine with no quacks, says so and offers to write one", async () => {
+    const onWriteQuack = vi.fn()
+    render(
+      <QuackList
+        quacks={[]}
+        isMineTab
+        onWriteQuack={onWriteQuack}
+      />,
+    )
+
+    expect(screen.getByText("You haven't posted any quacks yet.")).toBeInTheDocument()
+    await userEvent.click(screen.getByRole("button", { name: "Write a quack" }))
+    expect(onWriteQuack).toHaveBeenCalledOnce()
+  })
+
+  it("on Mine, a search with no match is not 'you have no quacks'", () => {
+    render(
+      <QuackList
+        quacks={[]}
+        isMineTab
+        searchQuery="pond"
+      />,
+    )
+
+    expect(screen.getByText(/No quacks match "pond"/)).toBeInTheDocument()
+    expect(screen.queryByText(/haven't posted/)).not.toBeInTheDocument()
+  })
 })
