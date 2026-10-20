@@ -43,6 +43,7 @@ export function QuackItem({ quack, currentUserId }: QuackItemProps) {
               variant="ghost"
               size="sm"
               className="ml-auto"
+              aria-label="Delete quack"
               onClick={() => setIsConfirmingDelete(true)}
             >
               Delete
