@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query"
-import { render, screen, waitFor } from "@testing-library/react"
+import { render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -55,7 +55,7 @@ describe("deleting a quack", () => {
     renderFeed(() => [quack("mine", "me"), quack("theirs", "other")])
 
     await screen.findByText("text of theirs")
-    expect(screen.getAllByRole("button", { name: "Delete" })).toHaveLength(1)
+    expect(screen.getAllByRole("button", { name: "Delete quack" })).toHaveLength(1)
   })
 
   it("asks first, then removes the quack from the feed", async () => {
@@ -66,11 +66,13 @@ describe("deleting a quack", () => {
     })
     renderFeed(() => quacks)
 
-    await userEvent.click(await screen.findByRole("button", { name: "Delete" }))
+    await userEvent.click(await screen.findByRole("button", { name: "Delete quack" }))
     expect(deleteQuack).not.toHaveBeenCalled()
     expect(screen.getByText("Delete this quack?")).toBeInTheDocument()
 
-    await userEvent.click(screen.getAllByRole("button", { name: "Delete" }).at(-1)!)
+    await userEvent.click(
+      within(screen.getByRole("dialog")).getByRole("button", { name: "Delete" }),
+    )
 
     await waitFor(() => expect(screen.queryByText("text of mine")).not.toBeInTheDocument())
     expect(deleteQuack).toHaveBeenCalledWith("mine", expect.anything())
@@ -80,7 +82,7 @@ describe("deleting a quack", () => {
   it("keeps the quack when I cancel", async () => {
     renderFeed(() => [quack("mine", "me")])
 
-    await userEvent.click(await screen.findByRole("button", { name: "Delete" }))
+    await userEvent.click(await screen.findByRole("button", { name: "Delete quack" }))
     await userEvent.click(screen.getByRole("button", { name: "Cancel" }))
 
     expect(deleteQuack).not.toHaveBeenCalled()
@@ -102,7 +104,7 @@ describe("deleting a quack", () => {
       }),
     ])
 
-    await userEvent.click(await screen.findByRole("button", { name: "Delete" }))
+    await userEvent.click(await screen.findByRole("button", { name: "Delete quack" }))
 
     expect(screen.getByText(/its poll and everyone's votes/)).toBeInTheDocument()
   })
@@ -111,8 +113,10 @@ describe("deleting a quack", () => {
     vi.mocked(deleteQuack).mockRejectedValue(new Error("Server unreachable"))
     renderFeed(() => [quack("mine", "me")])
 
-    await userEvent.click(await screen.findByRole("button", { name: "Delete" }))
-    await userEvent.click(screen.getAllByRole("button", { name: "Delete" }).at(-1)!)
+    await userEvent.click(await screen.findByRole("button", { name: "Delete quack" }))
+    await userEvent.click(
+      within(screen.getByRole("dialog")).getByRole("button", { name: "Delete" }),
+    )
 
     expect(await screen.findByText("Server unreachable")).toBeInTheDocument()
     expect(screen.getByText("text of mine")).toBeInTheDocument()
