@@ -1,6 +1,6 @@
 # 0003: Delete my quacks, see only mine
 
-Status: accepted (2026-10-20)
+Status: accepted (2026-10-20). The admin rule below is superseded by [0004](0004-moderator-deletes-any-quack.md).
 
 ## Context
 

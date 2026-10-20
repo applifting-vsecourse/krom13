@@ -55,6 +55,8 @@ For actions that should feel instant (like voting): update the TanStack Query ca
 
 "Only the author can change X" is enforced on the server by putting the owner in the statement (`deleteMany({ where: { id, userId } })`), not by reading the row, comparing, then writing. Look the row up afterwards only to tell 403 from 404. Hiding a button is never the rule.
 
+The one exception is moderation: the `admin` role (read from the session on the server, never from the client) may delete any quack, and each such delete is logged (moderator, quack, author). See [ADR 0004](docs/adr/0004-moderator-deletes-any-quack.md). Don't add other admin overrides without a story.
+
 ### Filtering happens on the server
 
 A feed filter (like Mine) is a query parameter the server applies, and it is part of the TanStack Query key. Never fetch everything and hide rows in the browser. Filter state that a person would want to keep on reload or share lives in the URL as a validated search param.

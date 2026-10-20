@@ -11,12 +11,13 @@ import { PollView } from "@/features/quack/components/PollView"
 import { UsersName } from "@/features/quack/components/UsersName"
 import { UsersUserName } from "@/features/quack/components/UsersUserName"
 
-type QuackItemProps = { quack: Quack; currentUserId?: string }
+type QuackItemProps = { quack: Quack; currentUserId?: string; isModerator?: boolean }
 
-export function QuackItem({ quack, currentUserId }: QuackItemProps) {
+export function QuackItem({ quack, currentUserId, isModerator = false }: QuackItemProps) {
   const { name, username } = quack.user
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
   const isMine = currentUserId === quack.userId
+  const canDelete = isMine || isModerator
 
   const initials = name
     .split(" ")
@@ -38,7 +39,7 @@ export function QuackItem({ quack, currentUserId }: QuackItemProps) {
           </span>
           <span className="text-xs text-muted-foreground">·</span>
           <time className="text-xs text-muted-foreground">{formatDate(quack.createdAt)}</time>
-          {isMine ? (
+          {canDelete ? (
             <Button
               variant="ghost"
               size="sm"
@@ -65,9 +66,10 @@ export function QuackItem({ quack, currentUserId }: QuackItemProps) {
         ) : null}
       </div>
 
-      {isMine ? (
+      {canDelete ? (
         <DeleteQuackDialog
           quackId={quack.id}
+          authorUsername={isMine ? undefined : username}
           hasPoll={quack.poll !== null}
           isOpen={isConfirmingDelete}
           onOpenChange={setIsConfirmingDelete}

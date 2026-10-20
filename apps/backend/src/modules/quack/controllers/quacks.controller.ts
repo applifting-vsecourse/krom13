@@ -81,12 +81,15 @@ export class QuacksController {
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
-    summary: 'Delete a quack (author only, permanent)',
+    summary: 'Delete a quack (author or moderator, permanent)',
     description:
-      'Also deletes its poll, answers and votes. Admins get no exception.',
+      'Also deletes its poll, answers and votes. Admins (moderators) can delete any quack; the server logs it.',
   })
   @ApiResponse({ status: 204, description: 'Deleted' })
-  @ApiResponse({ status: 403, description: 'Only the author can delete' })
+  @ApiResponse({
+    status: 403,
+    description: 'Only the author or a moderator can delete',
+  })
   @ApiResponse({ status: 404, description: 'No such quack' })
   async remove(@User() user: Identity, @Param('id') id: string): Promise<void> {
     await this.quacksService.deleteQuack(user, id);
