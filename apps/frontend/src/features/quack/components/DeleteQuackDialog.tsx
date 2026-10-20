@@ -17,6 +17,8 @@ import { useDeleteQuack } from "@/features/quack/hooks/useDeleteQuack"
 type DeleteQuackDialogProps = {
   quackId: string
   hasPoll: boolean
+  /** Set when a moderator deletes someone else's quack. */
+  authorUsername?: string
   isOpen: boolean
   onOpenChange: (open: boolean) => void
 }
@@ -24,6 +26,7 @@ type DeleteQuackDialogProps = {
 export function DeleteQuackDialog({
   quackId,
   hasPoll,
+  authorUsername,
   isOpen,
   onOpenChange,
 }: DeleteQuackDialogProps) {
@@ -36,7 +39,9 @@ export function DeleteQuackDialog({
     >
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Delete this quack?</DialogTitle>
+          <DialogTitle>
+            {authorUsername ? `Delete @${authorUsername}'s quack?` : "Delete this quack?"}
+          </DialogTitle>
           <DialogDescription>
             {hasPoll
               ? "The quack, its poll and everyone's votes will be deleted. This can't be undone."

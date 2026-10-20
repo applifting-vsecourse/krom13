@@ -66,6 +66,29 @@ describeDb('QuackRepository delete and author filter (database)', () => {
     ).resolves.toBe(0);
   });
 
+  it("deleteQuack removes anyone's quack with its poll and votes", async () => {
+    const quack = await quacks.createQuack({
+      text: 'Lunch?',
+      userId: author,
+      pollOptions: ['Pizza', 'Sushi'],
+    });
+    await prisma.pollVote.create({
+      data: {
+        quackId: quack.id,
+        userId: other,
+        optionId: quack.poll!.options[0].id,
+      },
+    });
+
+    await expect(quacks.deleteQuack(quack.id)).resolves.toBe(true);
+
+    await expect(quacks.getQuack(quack.id, author)).resolves.toBeNull();
+    await expect(
+      prisma.pollVote.count({ where: { quackId: quack.id } }),
+    ).resolves.toBe(0);
+    await expect(quacks.deleteQuack(quack.id)).resolves.toBe(false);
+  });
+
   it('deleting a missing quack changes nothing', async () => {
     await expect(quacks.deleteOwnQuack(`${prefix}-nope`, author)).resolves.toBe(
       false,

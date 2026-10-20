@@ -104,6 +104,12 @@ export class QuackRepository {
     return count > 0;
   }
 
+  /** Moderators only: deletes the quack whoever wrote it. */
+  async deleteQuack(id: string): Promise<boolean> {
+    const { count } = await this.prisma.quack.deleteMany({ where: { id } });
+    return count > 0;
+  }
+
   async createQuack(createQuackData: {
     text: string;
     mood?: Mood;

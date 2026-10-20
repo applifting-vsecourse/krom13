@@ -17,6 +17,7 @@ type QuackListProps = {
   isMineTab?: boolean
   onWriteQuack?: () => void
   currentUserId?: string
+  isModerator?: boolean
 }
 
 export function QuackList({
@@ -27,6 +28,7 @@ export function QuackList({
   searchQuery,
   onClearSearch,
   currentUserId,
+  isModerator,
   isMineTab,
   onWriteQuack,
 }: QuackListProps) {
@@ -99,6 +101,7 @@ export function QuackList({
           key={quack.id}
           quack={quack}
           currentUserId={currentUserId}
+          isModerator={isModerator}
         />
       ))}
     </div>

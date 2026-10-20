@@ -23,6 +23,9 @@ test("author can post a quack and delete it", async ({ page }) => {
 
   await quack.getByRole("button", { name: "Delete quack" }).click()
   await page.getByRole("dialog").getByRole("button", { name: "Delete" }).click()
+  // An open dialog hides the page from role queries, so a failed delete would
+  // look like a missing quack. The dialog closing is what proves success.
+  await expect(page.getByRole("dialog")).toHaveCount(0)
   await expect(quack).toHaveCount(0)
 })
 
@@ -37,4 +40,29 @@ test("nobody can delete someone else's quack", async ({ page }) => {
   const notMine = await findQuackNotBy(page, "DeepDuckThoughts")
   const response = await page.request.delete(`${API}/quacks/${notMine.id}`)
   expect(response.status()).toBe(403)
+})
+test("a moderator can delete someone else's quack", async ({ page }) => {
+  const text = `E2E moderated quack ${Date.now()}`
+  await signIn(page, "caffeinatedduck@example.com", "password1")
+  await page.goto("/quacks")
+  await page.getByLabel("New quack").fill(text)
+  await page.getByRole("button", { name: "Quack", exact: true }).click()
+  await expect(page.getByRole("article").filter({ hasText: text })).toBeVisible()
+  await page.getByRole("button", { name: "User menu" }).click()
+  await page.getByRole("menuitem", { name: /sign out/i }).click()
+
+  await signIn(
+    page,
+    process.env.SUPERADMIN_EMAIL ?? "admin@example.com",
+    process.env.SUPERADMIN_PASSWORD ?? "adminpassword",
+  )
+  await page.goto("/quacks")
+  const quack = page.getByRole("article").filter({ hasText: text })
+  await quack.getByRole("button", { name: "Delete quack" }).click()
+  await expect(page.getByRole("dialog")).toContainText("@caffeinatedduck")
+  await page.getByRole("dialog").getByRole("button", { name: "Delete" }).click()
+  // An open dialog hides the page from role queries, so a failed delete would
+  // look like a missing quack. The dialog closing is what proves success.
+  await expect(page.getByRole("dialog")).toHaveCount(0)
+  await expect(quack).toHaveCount(0)
 })

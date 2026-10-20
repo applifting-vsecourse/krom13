@@ -93,6 +93,7 @@ function QuacksPage() {
           onWriteQuack={writeQuack}
           quacks={quacksQuery.data ?? []}
           currentUserId={user?.id}
+          isModerator={user?.role === "admin"}
           isLoading={quacksQuery.isLoading}
           error={quacksQuery.error ?? undefined}
           // Only the error state offers a retry — posting invalidates the list,

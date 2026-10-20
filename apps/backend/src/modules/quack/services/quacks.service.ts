@@ -62,11 +62,25 @@ export class QuacksService {
   }
 
   async deleteQuack(user: Identity, quackId: string): Promise<void> {
+    if (user.role === 'admin') return this.moderateDelete(user, quackId);
     if (await this.quackRepository.deleteOwnQuack(quackId, user.id)) return;
     // Nothing was deleted: either it isn't there or it isn't theirs.
     const quack = await this.quackRepository.getQuack(quackId, user.id);
     if (!quack) throw new NotFoundException('Quack not found');
     throw new ForbiddenException('Only the author can delete a quack');
+  }
+
+  // The role comes from the session on every request, never from the client.
+  private async moderateDelete(user: Identity, quackId: string): Promise<void> {
+    const quack = await this.quackRepository.getQuack(quackId, user.id);
+    if (!quack) throw new NotFoundException('Quack not found');
+    // Already gone (deleted in the meantime) counts as done.
+    if (!(await this.quackRepository.deleteQuack(quackId))) return;
+    if (quack.userId !== user.id) {
+      this.logger.log(
+        `Moderator delete: moderator=${user.id} quack=${quackId} author=${quack.userId}`,
+      );
+    }
   }
 
   async vote(

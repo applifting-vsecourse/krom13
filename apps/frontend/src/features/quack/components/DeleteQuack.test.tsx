@@ -25,7 +25,7 @@ const quack = (id: string, userId: string, overrides: Partial<Quack> = {}): Quac
 
 // Reads from the query cache like the real page, so the refetch after a
 // delete is what removes the quack from the screen.
-function Feed({ server }: { server: () => Quack[] }) {
+function Feed({ server, isModerator }: { server: () => Quack[]; isModerator?: boolean }) {
   const { data } = useQuery({
     queryKey: quackKeys.list(""),
     queryFn: () => Promise.resolve(server()),
@@ -35,15 +35,19 @@ function Feed({ server }: { server: () => Quack[] }) {
     <QuackList
       quacks={data ?? []}
       currentUserId="me"
+      isModerator={isModerator}
     />
   )
 }
 
-function renderFeed(server: () => Quack[]) {
+function renderFeed(server: () => Quack[], isModerator = false) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: 0 } } })
   return render(
     <QueryClientProvider client={client}>
-      <Feed server={server} />
+      <Feed
+        server={server}
+        isModerator={isModerator}
+      />
     </QueryClientProvider>,
   )
 }
@@ -56,6 +60,24 @@ describe("deleting a quack", () => {
 
     await screen.findByText("text of theirs")
     expect(screen.getAllByRole("button", { name: "Delete quack" })).toHaveLength(1)
+  })
+
+  it("offers a moderator Delete on every quack and names the author", async () => {
+    renderFeed(() => [quack("mine", "me"), quack("theirs", "other")], true)
+
+    await screen.findByText("text of theirs")
+    const buttons = screen.getAllByRole("button", { name: "Delete quack" })
+    expect(buttons).toHaveLength(2)
+
+    await userEvent.click(buttons[1]!)
+    expect(screen.getByText("Delete @other's quack?")).toBeInTheDocument()
+  })
+
+  it("keeps the usual dialog for a moderator's own quack", async () => {
+    renderFeed(() => [quack("mine", "me")], true)
+
+    await userEvent.click(await screen.findByRole("button", { name: "Delete quack" }))
+    expect(screen.getByText("Delete this quack?")).toBeInTheDocument()
   })
 
   it("asks first, then removes the quack from the feed", async () => {

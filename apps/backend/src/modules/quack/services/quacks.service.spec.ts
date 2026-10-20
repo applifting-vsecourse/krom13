@@ -9,6 +9,7 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { mock, MockProxy } from 'jest-mock-extended';
@@ -88,6 +89,53 @@ describe('QuacksService', () => {
       const service = new QuacksService(repository, mock<PollRepository>());
       await expect(service.deleteQuack(viewer, 'q1')).resolves.toBeUndefined();
       expect(repository.deleteOwnQuack).toHaveBeenCalledWith('q1', 'u1');
+    });
+
+    describe('as a moderator', () => {
+      const moderator = new Identity('m1', 'm@example.com', 'Mod', 'admin');
+
+      it("deletes someone else's quack", async () => {
+        const repository = mock<QuackRepository>();
+        repository.getQuack.mockResolvedValue(aQuack({ userId: 'u2' }));
+        repository.deleteQuack.mockResolvedValue(true);
+
+        const service = new QuacksService(repository, mock<PollRepository>());
+        await expect(
+          service.deleteQuack(moderator, 'q1'),
+        ).resolves.toBeUndefined();
+        expect(repository.deleteQuack).toHaveBeenCalledWith('q1');
+        expect(repository.deleteOwnQuack).not.toHaveBeenCalled();
+      });
+
+      it('answers 404 for a quack that does not exist', async () => {
+        const repository = mock<QuackRepository>();
+        repository.getQuack.mockResolvedValue(null);
+
+        const service = new QuacksService(repository, mock<PollRepository>());
+        await expect(
+          service.deleteQuack(moderator, 'q1'),
+        ).rejects.toBeInstanceOf(NotFoundException);
+      });
+
+      it("logs a delete of someone else's quack, not of their own", async () => {
+        const repository = mock<QuackRepository>();
+        repository.deleteQuack.mockResolvedValue(true);
+        const service = new QuacksService(repository, mock<PollRepository>());
+        const log = jest
+          .spyOn(Logger.prototype, 'log')
+          .mockImplementation(() => undefined);
+
+        repository.getQuack.mockResolvedValue(aQuack({ userId: 'm1' }));
+        await service.deleteQuack(moderator, 'q1');
+        expect(log).not.toHaveBeenCalled();
+
+        repository.getQuack.mockResolvedValue(aQuack({ userId: 'u2' }));
+        await service.deleteQuack(moderator, 'q1');
+        expect(log).toHaveBeenCalledWith(
+          'Moderator delete: moderator=m1 quack=q1 author=u2',
+        );
+        log.mockRestore();
+      });
     });
 
     it("answers 403 for someone else's quack", async () => {
