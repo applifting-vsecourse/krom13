@@ -12,3 +12,11 @@ describe("quacksQueryOptions refresh", () => {
     expect(quacksQueryOptions("", { isAutoRefresh: false }).refetchInterval).toBe(false)
   })
 })
+
+describe("quacksQueryOptions tab", () => {
+  it("keeps All and Mine in separate cache entries", () => {
+    expect(quacksQueryOptions("", { tab: "mine" }).queryKey).not.toEqual(
+      quacksQueryOptions("").queryKey,
+    )
+  })
+})

@@ -1,8 +1,12 @@
+import { useState } from "react"
+
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
 import { formatDate } from "@/lib/date"
 import { MOOD_EMOJI } from "@/lib/moods"
 
 import type { Quack } from "@/features/quack/api/quackSchemas"
+import { DeleteQuackDialog } from "@/features/quack/components/DeleteQuackDialog"
 import { PollView } from "@/features/quack/components/PollView"
 import { UsersName } from "@/features/quack/components/UsersName"
 import { UsersUserName } from "@/features/quack/components/UsersUserName"
@@ -11,6 +15,8 @@ type QuackItemProps = { quack: Quack; currentUserId?: string }
 
 export function QuackItem({ quack, currentUserId }: QuackItemProps) {
   const { name, username } = quack.user
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
+  const isMine = currentUserId === quack.userId
 
   const initials = name
     .split(" ")
@@ -32,6 +38,16 @@ export function QuackItem({ quack, currentUserId }: QuackItemProps) {
           </span>
           <span className="text-xs text-muted-foreground">·</span>
           <time className="text-xs text-muted-foreground">{formatDate(quack.createdAt)}</time>
+          {isMine ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="ml-auto"
+              onClick={() => setIsConfirmingDelete(true)}
+            >
+              Delete
+            </Button>
+          ) : null}
         </div>
         {quack.mood ? (
           <span className="w-fit rounded-md border border-border px-2 text-xs text-muted-foreground">
@@ -43,10 +59,19 @@ export function QuackItem({ quack, currentUserId }: QuackItemProps) {
           <PollView
             quackId={quack.id}
             poll={quack.poll}
-            canClose={currentUserId === quack.userId}
+            canClose={isMine}
           />
         ) : null}
       </div>
+
+      {isMine ? (
+        <DeleteQuackDialog
+          quackId={quack.id}
+          hasPoll={quack.poll !== null}
+          isOpen={isConfirmingDelete}
+          onOpenChange={setIsConfirmingDelete}
+        />
+      ) : null}
     </article>
   )
 }
