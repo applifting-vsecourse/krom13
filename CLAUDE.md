@@ -31,6 +31,10 @@ The CLI puts `shadow-xs`/`shadow-sm` on inputs, textareas and cards. [`DESIGN.md
 
 A short, optional choice (like a quack's mood) is a `ToggleGroup type="single"` of emoji buttons, not a `Select`. Clicking the selected item clears it, so "no value" needs no empty option. Each item gets an `aria-label`, and the emoji map lives next to the zod schema (`MOOD_EMOJI`).
 
+### Check the ADR index before changing the data model
+
+Before changing the data model or the structure of the app, check the index in [`docs/adr/README.md`](docs/adr/README.md).
+
 ### Record app-wide rules here
 
 When you hit a rule that applies across the app (not just to the feature at hand), add it to this file in the same change. Rules about how screens look go in [`DESIGN.md`](DESIGN.md) instead.
@@ -56,6 +60,10 @@ For actions that should feel instant (like voting): update the TanStack Query ca
 "Only the author can change X" is enforced on the server by putting the owner in the statement (`deleteMany({ where: { id, userId } })`), not by reading the row, comparing, then writing. Look the row up afterwards only to tell 403 from 404. Hiding a button is never the rule.
 
 The one exception is moderation: the `admin` role (read from the session on the server, never from the client) may delete any quack, and each such delete is logged (moderator, quack, author). See [ADR 0004](docs/adr/0004-moderator-deletes-any-quack.md). Don't add other admin overrides without a story.
+
+### Deleting something that has replies empties it; deleting it never deletes a reply
+
+Replies belong to their authors. A quack (or reply) with replies is emptied in place (text, mood, poll, votes and author erased, `deletedAt` set) in one transaction; without replies it is hard-deleted. When the last reply under an emptied row goes, the emptied row goes too. Every read of live content filters `deletedAt IS NULL`. Reply links use `onDelete: Restrict`, never `Cascade` or `SetNull`. Any new content column on `Quack` must be added to the erase step and its test. See `story.md` (replies).
 
 ### Filtering happens on the server
 

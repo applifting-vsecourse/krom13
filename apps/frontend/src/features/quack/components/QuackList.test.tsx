@@ -6,11 +6,17 @@ import { describe, expect, it, vi } from "vitest"
 import type { Quack } from "@/features/quack/api/quackSchemas"
 import { QuackList } from "@/features/quack/components/QuackList"
 
+// The feed links to the thread page; these tests render without a router.
+vi.mock("@tanstack/react-router", () => ({
+  Link: ({ children }: { children: React.ReactNode }) => <a href="/thread">{children}</a>,
+}))
+
 const quack = (overrides: Partial<Quack> = {}): Quack => ({
   id: "q1",
   text: "quack quack",
   mood: null,
   userId: "u1",
+  replyCount: 0,
   createdAt: new Date("2026-01-01T12:00:00Z"),
   user: { id: "u1", name: "Caffeinated Duck", username: "CaffeinatedDuck" },
   poll: null,
@@ -95,5 +101,21 @@ describe("QuackList", () => {
 
     expect(screen.getByText(/No quacks match "pond"/)).toBeInTheDocument()
     expect(screen.queryByText(/haven't posted/)).not.toBeInTheDocument()
+  })
+
+  it("shows how many replies a quack has", () => {
+    render(
+      <QuackList
+        quacks={[
+          quack({ id: "a", replyCount: 0 }),
+          quack({ id: "b", replyCount: 1 }),
+          quack({ id: "c", replyCount: 3 }),
+        ]}
+      />,
+    )
+
+    expect(screen.getAllByRole("link", { name: "Reply" })).toHaveLength(1)
+    expect(screen.getByRole("link", { name: "1 reply" })).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "3 replies" })).toBeInTheDocument()
   })
 })

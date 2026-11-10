@@ -17,6 +17,8 @@ import { useDeleteQuack } from "@/features/quack/hooks/useDeleteQuack"
 type DeleteQuackDialogProps = {
   quackId: string
   hasPoll: boolean
+  /** Replies that stay under a "deleted" placeholder. */
+  replyCount?: number
   /** Set when a moderator deletes someone else's quack. */
   authorUsername?: string
   isOpen: boolean
@@ -26,6 +28,7 @@ type DeleteQuackDialogProps = {
 export function DeleteQuackDialog({
   quackId,
   hasPoll,
+  replyCount = 0,
   authorUsername,
   isOpen,
   onOpenChange,
@@ -46,6 +49,9 @@ export function DeleteQuackDialog({
             {hasPoll
               ? "The quack, its poll and everyone's votes will be deleted. This can't be undone."
               : "The quack will be deleted. This can't be undone."}
+            {replyCount > 0
+              ? ` ${replyCount} ${replyCount === 1 ? "reply stays" : "replies stay"} under a deleted-quack placeholder.`
+              : ""}
           </DialogDescription>
         </DialogHeader>
         {deleteQuack.isError ? (

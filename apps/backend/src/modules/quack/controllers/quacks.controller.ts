@@ -24,9 +24,14 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { CreateQuackDto } from './dto/create-quack.dto';
+import { CreateReplyDto } from './dto/create-reply.dto';
 import { ListQuacksQuery } from './dto/list-quacks.query';
 import { PollResponseDto } from './dto/poll.response.dto';
-import { QuackResponseDto } from './dto/quack.response.dto';
+import {
+  QuackResponseDto,
+  ThreadItemDto,
+  ThreadResponseDto,
+} from './dto/quack.response.dto';
 import { VoteDto } from './dto/vote.dto';
 
 @ApiTags('quacks')
@@ -78,12 +83,52 @@ export class QuacksController {
     return QuackResponseDto.fromDomain(quack);
   }
 
+  @Get(':id')
+  @ApiOperation({
+    summary: 'A top-level quack with its replies (the thread page)',
+    description:
+      'Replies are flat, oldest first. An emptied quack (deleted, but with replies) is returned with deleted: true.',
+  })
+  @ApiResponse({ status: 200, type: ThreadResponseDto })
+  @ApiResponse({ status: 404, description: 'No such top-level quack' })
+  async thread(
+    @User() user: Identity,
+    @Param('id') id: string,
+  ): Promise<ThreadResponseDto> {
+    return ThreadResponseDto.fromDomain(
+      await this.quacksService.getThread(user, id),
+    );
+  }
+
+  @Post(':id/replies')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Reply to a quack or to a reply',
+    description:
+      'The reply is shown flat under the top-level quack. Text and mood only; a poll is rejected.',
+  })
+  @ApiResponse({ status: 201, type: ThreadItemDto })
+  @ApiResponse({ status: 400, description: 'Invalid reply' })
+  @ApiResponse({ status: 404, description: 'No such quack' })
+  @ApiResponse({ status: 409, description: 'The quack was deleted' })
+  async reply(
+    @User() user: Identity,
+    @Param('id') id: string,
+    @Body() body: CreateReplyDto,
+  ): Promise<ThreadItemDto> {
+    const reply = await this.quacksService.createReply(user, id, {
+      text: body.text,
+      mood: body.mood,
+    });
+    return ThreadItemDto.fromDomain(reply);
+  }
+
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
-    summary: 'Delete a quack (author or moderator, permanent)',
+    summary: 'Delete a quack or reply (author or moderator, permanent)',
     description:
-      'Also deletes its poll, answers and votes. Admins (moderators) can delete any quack; the server logs it.',
+      'Deletes its poll, answers and votes too. A quack that has replies is emptied instead (text, mood, poll and author erased) and its replies stay under a placeholder; it disappears for good with its last reply. Admins (moderators) can delete any quack; the server logs it.',
   })
   @ApiResponse({ status: 204, description: 'Deleted' })
   @ApiResponse({

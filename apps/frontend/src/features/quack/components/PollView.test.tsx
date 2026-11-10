@@ -12,6 +12,11 @@ import { QuackList } from "@/features/quack/components/QuackList"
 
 vi.mock("@/features/quack/api/pollApi")
 
+// The feed links to the thread page; these tests render without a router.
+vi.mock("@tanstack/react-router", () => ({
+  Link: ({ children }: { children: React.ReactNode }) => <a href="/thread">{children}</a>,
+}))
+
 const poll = (overrides: Partial<Poll> = {}): Poll => ({
   options: [
     { id: "pizza", text: "Pizza", votes: 2 },
@@ -28,6 +33,7 @@ const quack = (pollOverrides: Partial<Poll> = {}): Quack => ({
   text: "Where do we go for lunch?",
   mood: null,
   userId: "author",
+  replyCount: 0,
   createdAt: new Date("2026-01-01T12:00:00Z"),
   user: { id: "author", name: "Pond Admin", username: "pondadmin" },
   poll: poll(pollOverrides),
