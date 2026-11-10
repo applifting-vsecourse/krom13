@@ -11,12 +11,17 @@ import type { Quack } from "@/features/quack/api/quackSchemas"
 import { QuackList } from "@/features/quack/components/QuackList"
 
 vi.mock("@/features/quack/api/deleteQuack")
+// The feed links to the thread page; these tests render without a router.
+vi.mock("@tanstack/react-router", () => ({
+  Link: ({ children }: { children: React.ReactNode }) => <a href="/thread">{children}</a>,
+}))
 
 const quack = (id: string, userId: string, overrides: Partial<Quack> = {}): Quack => ({
   id,
   text: `text of ${id}`,
   mood: null,
   userId,
+  replyCount: 0,
   createdAt: new Date("2026-01-01T12:00:00Z"),
   user: { id: userId, name: `Name ${userId}`, username: userId },
   poll: null,

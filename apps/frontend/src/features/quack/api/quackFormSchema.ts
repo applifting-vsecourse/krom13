@@ -9,13 +9,15 @@ export const MIN_POLL_OPTIONS = 2
 export const MAX_POLL_OPTIONS = 6
 export const POLL_OPTION_MAX_LENGTH = 80
 
+const textSchema = z
+  .string()
+  .trim()
+  .min(1, "Write something first")
+  .max(MAX_LENGTH, `Keep it under ${MAX_LENGTH} characters`)
+
 export const quackFormSchema = z
   .object({
-    text: z
-      .string()
-      .trim()
-      .min(1, "Write something first")
-      .max(MAX_LENGTH, `Keep it under ${MAX_LENGTH} characters`),
+    text: textSchema,
     // null means "no mood". Not undefined: react-hook-form turns undefined back
     // into the default value, so clearing would re-select the default mood.
     mood: moodSchema.nullable(),
@@ -48,3 +50,11 @@ export type QuackFormValues = z.infer<typeof quackFormSchema>
 
 export const emptyOptions = (): QuackFormValues["options"] =>
   Array.from({ length: MIN_POLL_OPTIONS }, () => ({ text: "" }))
+
+// A reply is text and an optional mood: no poll.
+export const replyFormSchema = z.object({
+  text: textSchema,
+  mood: moodSchema.nullable(),
+})
+
+export type ReplyFormValues = z.infer<typeof replyFormSchema>

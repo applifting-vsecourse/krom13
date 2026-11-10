@@ -9,6 +9,7 @@ export function useDeleteQuack() {
   return useMutation({
     mutationFn: deleteQuack,
     // Not optimistic: a failed delete would have to put a post back.
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: quackKeys.lists() }),
+    // Lists and threads: a delete can empty a row, remove replies' parent or change counts.
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: quackKeys.all() }),
   })
 }

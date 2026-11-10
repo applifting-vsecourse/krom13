@@ -32,16 +32,32 @@ enum Mood {
 }
 
 model Quack {
-  id        String   @id @default(cuid())
-  text      String   @db.Text
+  id        String    @id @default(cuid())
+  // '' once the quack is emptied (see docs/adr/0005).
+  text      String    @db.Text
   mood      Mood?
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String
+  user      User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // NULL once the quack is emptied.
+  userId    String?
   poll      Poll?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
+
+  // What this answers. NULL for a top-level quack.
+  parent    Quack?    @relation("Replies", fields: [parentId], references: [id], onDelete: Restrict)
+  parentId  String?
+  replies   Quack[]   @relation("Replies")
+  // The top-level quack of the thread, set once when the reply is created.
+  root      Quack?    @relation("Thread", fields: [rootId], references: [id], onDelete: Restrict)
+  rootId    String?
+  thread    Quack[]   @relation("Thread")
+
+  // Set when a quack that still has replies is deleted: the row stays, empty.
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @default(now()) @updatedAt
 
   @@index([userId])
+  @@index([parentId])
+  @@index([rootId, createdAt])
   @@map("quack")
 }
 

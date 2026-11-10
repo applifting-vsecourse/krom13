@@ -20,6 +20,9 @@ const aQuack = (overrides: Partial<Quack> = {}): Quack => ({
   text: 'quack quack',
   mood: null,
   userId: 'u1',
+  parentId: null,
+  rootId: null,
+  deletedAt: null,
   createdAt: new Date('2026-01-01T12:00:00Z'),
   updatedAt: new Date('2026-01-01T12:00:00Z'),
   user: { id: 'u1', name: 'Caffeinated Duck', username: 'CaffeinatedDuck' },
@@ -293,6 +296,77 @@ describe('QuacksService', () => {
       quacks.getQuack.mockResolvedValue(aQuack({ poll: null }));
 
       await expect(service.closePoll(viewer, 'q1')).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('replies', () => {
+    const setup = (): {
+      quacks: MockProxy<QuackRepository>;
+      service: QuacksService;
+    } => {
+      const quacks = mock<QuackRepository>();
+      return {
+        quacks,
+        service: new QuacksService(quacks, mock<PollRepository>()),
+      };
+    };
+
+    it('creates a reply owned by the signed-in user', async () => {
+      const { quacks, service } = setup();
+      const reply = aQuack({ id: 'r1', parentId: 'q1', rootId: 'q1' });
+      quacks.createReply.mockResolvedValue({
+        outcome: 'created',
+        quack: reply,
+      });
+
+      await expect(
+        service.createReply(viewer, 'q1', { text: 'hi', mood: 'happy' }),
+      ).resolves.toEqual(reply);
+      expect(quacks.createReply).toHaveBeenCalledWith({
+        text: 'hi',
+        mood: 'happy',
+        parentId: 'q1',
+        userId: 'u1',
+      });
+    });
+
+    it('answers 404 when the quack does not exist', async () => {
+      const { quacks, service } = setup();
+      quacks.createReply.mockResolvedValue({ outcome: 'parent_not_found' });
+
+      await expect(
+        service.createReply(viewer, 'nope', { text: 'hi' }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('answers 409 when the quack was deleted', async () => {
+      const { quacks, service } = setup();
+      quacks.createReply.mockResolvedValue({ outcome: 'parent_deleted' });
+
+      await expect(
+        service.createReply(viewer, 'q1', { text: 'hi' }),
+      ).rejects.toBeInstanceOf(ConflictException);
+    });
+
+    it('answers 404 for a thread that does not exist or is a reply', async () => {
+      const { quacks, service } = setup();
+      quacks.getThread.mockResolvedValue(null);
+
+      await expect(service.getThread(viewer, 'r1')).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+    });
+
+    it('answers 404, not 403, for an emptied quack', async () => {
+      const { quacks, service } = setup();
+      quacks.deleteOwnQuack.mockResolvedValue(false);
+      quacks.getQuack.mockResolvedValue(
+        aQuack({ userId: null, deletedAt: new Date(), text: '' }),
+      );
+
+      await expect(service.deleteQuack(viewer, 'q1')).rejects.toBeInstanceOf(
         NotFoundException,
       );
     });

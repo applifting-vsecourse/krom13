@@ -22,6 +22,7 @@ const SAMPLE_QUACKS: Quack[] = [
     text: "me: throws one crumb into the pond\nducks: assemble like the Avengers\ni fear i may have started something",
     mood: null,
     userId: "sample-user-1",
+    replyCount: 0,
     createdAt: new Date("2026-09-22T09:12:00"),
     user: { id: "sample-user-1", name: "Caffeinated Duck", username: "CaffeinatedDuck" },
     poll: null,
@@ -31,6 +32,7 @@ const SAMPLE_QUACKS: Quack[] = [
     text: "If ducks wore pants, would they wear them on their legs or over their whole lower half like a cape?\nAsking for a friend. A feathery friend.",
     mood: null,
     userId: "sample-user-2",
+    replyCount: 0,
     createdAt: new Date("2026-09-22T08:40:00"),
     user: { id: "sample-user-2", name: "Deep Duck Thoughts", username: "DeepDuckThoughts" },
     poll: null,
@@ -99,6 +101,7 @@ function LandingPage() {
               <QuackItem
                 key={quack.id}
                 quack={quack}
+                isPreview
               />
             ))}
           </div>

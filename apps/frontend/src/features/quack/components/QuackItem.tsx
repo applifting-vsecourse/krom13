@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { Link } from "@tanstack/react-router"
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -10,21 +11,29 @@ import { DeleteQuackDialog } from "@/features/quack/components/DeleteQuackDialog
 import { PollView } from "@/features/quack/components/PollView"
 import { UsersName } from "@/features/quack/components/UsersName"
 import { UsersUserName } from "@/features/quack/components/UsersUserName"
+import { initialsOf } from "@/features/quack/lib/initials"
 
-type QuackItemProps = { quack: Quack; currentUserId?: string; isModerator?: boolean }
+type QuackItemProps = {
+  quack: Quack
+  currentUserId?: string
+  isModerator?: boolean
+  // A sample on the landing page: there is no thread to open.
+  isPreview?: boolean
+}
 
-export function QuackItem({ quack, currentUserId, isModerator = false }: QuackItemProps) {
+export function QuackItem({
+  quack,
+  currentUserId,
+  isModerator = false,
+  isPreview = false,
+}: QuackItemProps) {
   const { name, username } = quack.user
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
   const isMine = currentUserId === quack.userId
   const canDelete = isMine || isModerator
 
-  const initials = name
-    .split(" ")
-    .map((word) => word[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase()
+  const initials = initialsOf(name)
+  const { replyCount } = quack
 
   return (
     <article className="flex w-full gap-4 border-b border-border pt-2 pb-4 last:border-b-0">
@@ -64,6 +73,23 @@ export function QuackItem({ quack, currentUserId, isModerator = false }: QuackIt
             canClose={isMine}
           />
         ) : null}
+        {isPreview ? null : (
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className="-ml-3 w-fit text-muted-foreground"
+          >
+            <Link
+              to="/quacks/$quackId"
+              params={{ quackId: quack.id }}
+            >
+              {replyCount === 0
+                ? "Reply"
+                : `${replyCount} ${replyCount === 1 ? "reply" : "replies"}`}
+            </Link>
+          </Button>
+        )}
       </div>
 
       {canDelete ? (
@@ -71,6 +97,7 @@ export function QuackItem({ quack, currentUserId, isModerator = false }: QuackIt
           quackId={quack.id}
           authorUsername={isMine ? undefined : username}
           hasPoll={quack.poll !== null}
+          replyCount={replyCount}
           isOpen={isConfirmingDelete}
           onOpenChange={setIsConfirmingDelete}
         />
