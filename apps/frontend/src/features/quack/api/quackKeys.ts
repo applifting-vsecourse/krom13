@@ -5,4 +5,5 @@ export const quackKeys = {
     [...quackKeys.lists(), tab, search] as const,
   thread: (quackId: string) => [...quackKeys.all(), "thread", quackId] as const,
   vote: () => ["quacks", "vote"] as const,
+  like: () => ["quacks", "like"] as const,
 }

@@ -46,4 +46,4 @@ Likes live in their own table, **one row per person per quack**, and the count i
 - **Likes are anonymous in the API.** Only the count and the viewer's own state are returned, never names. A "who liked" list would be a new story but needs no schema change: the rows already hold it.
 - **Deleting a user** removes their likes (and lowers the counts) through the cascade.
 - **The migration is additive**: one new table, no change to existing rows.
-- **Tests.** The guarantees live in Postgres, so a `quack-like.repository.int.spec.ts` proves the primary key, the concurrent toggle and the erase on emptying; API behaviour goes in an `*.int-spec.ts` ([0006](0006-ci-test-layers.md)).
+- **Tests.** The guarantees live in Postgres, so the integration tests in `quacks.likes.int-spec.ts` prove the primary key, the concurrent toggle and the erase on emptying against the test database ([0006](0006-ci-test-layers.md)).

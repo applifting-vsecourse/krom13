@@ -117,6 +117,15 @@ export class QuacksService {
     }
   }
 
+  /** Flips the viewer's like on a quack or reply. */
+  async toggleLike(
+    user: Identity,
+    quackId: string,
+  ): Promise<{ liked: boolean; likeCount: number }> {
+    void [user, quackId];
+    throw new Error('not implemented');
+  }
+
   async vote(
     user: Identity,
     quackId: string,

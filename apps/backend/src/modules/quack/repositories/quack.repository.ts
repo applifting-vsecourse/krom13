@@ -6,7 +6,12 @@ import {
   User as PrismaUser,
 } from '@/generated/prisma/client';
 import { buildPollResults } from '@/modules/quack/domain/poll';
-import { Mood, Quack, Thread } from '@/modules/quack/domain/quack';
+import {
+  Mood,
+  Quack,
+  Thread,
+  ToggleLikeResult,
+} from '@/modules/quack/domain/quack';
 import { Injectable } from '@nestjs/common';
 
 type PrismaQuackWithPoll = PrismaQuack & {
@@ -120,6 +125,12 @@ export class QuackRepository {
     if (!quack) return null;
     const [mapped] = await this.attachPolls([quack], viewerId);
     return mapped;
+  }
+
+  /** Flips `userId`'s like on the quack (docs/adr/0007-likes.md). */
+  async toggleLike(quackId: string, userId: string): Promise<ToggleLikeResult> {
+    void [quackId, userId];
+    throw new Error('not implemented');
   }
 
   /** Deletes (or empties, see `removeOrEmpty`) the quack only when `userId` wrote it. */

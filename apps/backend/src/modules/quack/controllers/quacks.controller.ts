@@ -140,6 +140,11 @@ export class QuacksController {
     await this.quacksService.deleteQuack(user, id);
   }
 
+  // Stub: the route, its decorators and the DTO come with the feature.
+  like(): never {
+    throw new Error('not implemented');
+  }
+
   @Put(':id/vote')
   @ApiOperation({
     summary: 'Vote on a poll, or move your vote to another answer',
