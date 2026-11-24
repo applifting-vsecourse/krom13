@@ -50,3 +50,118 @@ jobs:
 
       - name: Build frontend
         run: pnpm frontend build
+
+  test-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: quacker
+          POSTGRES_PASSWORD: quacker
+          POSTGRES_DB: quacker_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U quacker -d quacker_test"
+          --health-interval 3s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      TEST_DATABASE_URL: postgresql://quacker:quacker@localhost:5432/quacker_test
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm backend prisma:generate
+
+      # The test setup applies the Prisma migrations to quacker_test itself.
+      - name: Integration tests
+        run: pnpm backend test:int
+
+  test-e2e:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: quacker
+          POSTGRES_PASSWORD: quacker
+          POSTGRES_DB: quacker
+        # apps/backend/.env.example expects the database on 5433, like docker compose.
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U quacker -d quacker"
+          --health-interval 3s
+          --health-timeout 3s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Create env files
+        run: pnpm env:check
+
+      - name: Generate Prisma client
+        run: pnpm backend prisma:generate
+
+      - name: Migrate and seed the database
+        run: |
+          pnpm backend migrate
+          pnpm backend seed
+
+      - name: Start backend and frontend
+        run: |
+          pnpm backend start > backend.log 2>&1 &
+          pnpm frontend dev > frontend.log 2>&1 &
+          npx --yes wait-on@9 --timeout 120000 http-get://localhost:4050/api/docs http://localhost:3050
+
+      - name: Install Playwright browser
+        run: pnpm frontend exec playwright install --with-deps chromium
+
+      - name: Run Playwright tests
+        run: pnpm frontend e2e
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: |
+            apps/frontend/test-results
+            backend.log
+            frontend.log
+
+  # Not a required check: it shows red on the pull request but must not block
+  # the merge or the deploy, so no other job depends on it and branch
+  # protection must not list it.
+  test-changes:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Tests may only grow
+        run: scripts/check-test-changes.sh "origin/${{ github.base_ref }}"

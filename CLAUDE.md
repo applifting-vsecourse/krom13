@@ -14,6 +14,7 @@ The worked example is the quack feed: `Quack` model → seed → repository → 
 - `pnpm dev` — everything: env files, Postgres (Docker), migrate, seed, both dev servers
 - `pnpm check-all` — lint + type-check + tests + build (same as CI)
 - `pnpm backend test` / `pnpm frontend test:ci` — unit tests
+- `pnpm backend test:int` — integration tests (`*.int-spec.ts`): supertest against the Nest app and the `quacker_test` database (created and migrated automatically; needs the Docker Postgres up). Never touches the dev database.
 - `pnpm frontend e2e` — Playwright tests in `apps/frontend/e2e/` against the running app (frontend :3050, backend :4050, seeded users); not part of `check-all`
 - `pnpm backend prisma:migrations:run` — create/apply migrations after schema changes
 
@@ -72,6 +73,14 @@ A feed filter (like Mine) is a query parameter the server applies, and it is par
 ### Database changes need an integration test
 
 When a guarantee lives in Postgres (locks, constraints), mocks can't prove it. Add a `*.int.spec.ts` that runs when `DATABASE_URL` is set (see `poll.repository.int.spec.ts`).
+
+### Tests only grow in a pull request
+
+Don't remove or rewrite lines in test files (`*.spec.ts`, `*.int-spec.ts`, `*.test.tsx`, `apps/frontend/e2e`) — add new tests or new checks. The `test-changes` CI job (`scripts/check-test-changes.sh`) turns the PR red otherwise. It is deliberately not a required check. See [ADR 0006](docs/adr/0006-ci-test-layers.md).
+
+### Integration tests use the test database and the real app
+
+Name them `*.int-spec.ts`, build the app with `createTestApp()` from `src/test-int/test-app.ts` (it uses the same `configureApp()` as `main.ts`), and call `cleanDatabase()` in `beforeEach`. Sign in through `signIn()`, don't fake sessions. Don't rely on seed data. The older `*.int.spec.ts` repository tests stay in the unit run (skipped without `DATABASE_URL`).
 
 ### User stories
 
