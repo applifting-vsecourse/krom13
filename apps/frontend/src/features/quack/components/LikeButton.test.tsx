@@ -43,9 +43,7 @@ function renderFeed(rows: Row[]) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: 0 } } })
   const view = render(
     <QueryClientProvider client={client}>
-      <Feed
-        server={() => rows}
-      />
+      <Feed server={() => rows} />
     </QueryClientProvider>,
   )
   return { client, ...view }
