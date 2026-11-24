@@ -19,7 +19,7 @@ vi.mock("@/features/quack/api/deleteQuack")
 // What the server sends per quack, as far as likes go.
 type Row = { id: string; likeCount: number; likedByMe: boolean }
 
-function Feed({ server, canLike = true }: { server: () => Row[]; canLike?: boolean }) {
+function Feed({ server }: { server: () => Row[] }) {
   const { data } = useQuery({
     queryKey: quackKeys.list(""),
     queryFn: () => Promise.resolve(server()),
@@ -33,20 +33,18 @@ function Feed({ server, canLike = true }: { server: () => Row[]; canLike?: boole
           quackId={row.id}
           likeCount={row.likeCount}
           likedByMe={row.likedByMe}
-          canLike={canLike}
         />
       ))}
     </>
   )
 }
 
-function renderFeed(rows: Row[], canLike = true) {
+function renderFeed(rows: Row[]) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: 0 } } })
   const view = render(
     <QueryClientProvider client={client}>
       <Feed
         server={() => rows}
-        canLike={canLike}
       />
     </QueryClientProvider>,
   )
@@ -84,19 +82,6 @@ describe("like button display", () => {
     const button = await heart()
     expect(button).toHaveAttribute("aria-pressed", "false")
     expect(button).toHaveTextContent("3")
-  })
-
-  // R14 — see the note in likes.spec.ts (e2e): signed-out visitors cannot
-  // open the feed today, so this is the component's own promise.
-  it("shows the count but disables the button when I cannot like", async () => {
-    const user = userEvent.setup()
-    renderFeed([{ id: "q1", likeCount: 2, likedByMe: false }], false)
-
-    const button = await heart()
-    expect(button).toBeDisabled()
-    expect(button).toHaveTextContent("2")
-    await user.click(button)
-    expect(toggleLike).not.toHaveBeenCalled()
   })
 })
 

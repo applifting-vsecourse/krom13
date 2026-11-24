@@ -3,8 +3,6 @@ type LikeButtonProps = {
   quackId: string
   likeCount: number
   likedByMe: boolean
-  // False for a visitor who is not signed in: the count shows, the button is off.
-  canLike: boolean
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

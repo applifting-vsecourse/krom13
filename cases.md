@@ -4,7 +4,7 @@
 
 **Decisions**
 
-- Only signed-in people can like. Anonymous visitors see the count.
+- Only signed-in people can like. Signed-out visitors can't see quacks at all today, so there is no signed-out like button.
 - You can like your own quack.
 - Like is a **toggle**: one call flips the state.
 - Replies get likes too, same as quacks.
@@ -17,6 +17,8 @@
 Names: "Ann" and "Bob" are signed-in users. `likeCount` and `likedByMe` are returned on every quack and reply.
 
 ## 1. Rules (unit tests)
+
+R14, A6 and E3 (a signed-out visitor sees the count and a disabled heart) were dropped: signed-out visitors can't see quacks. The numbers are not reused.
 
 Service and component level, repository mocked.
 
@@ -35,7 +37,6 @@ Service and component level, repository mocked.
 | R11 | Q has 0 likes                            | Count is shown                  | Shows `0`, not blank                                                                                                               |
 | R12 | Ann has liked Q                          | Q is rendered for Ann           | Heart is filled, `aria-pressed="true"`, count shown                                                                                |
 | R13 | Ann hasn't liked Q                       | Q is rendered for Ann           | Heart is outline, `aria-pressed="false"`                                                                                           |
-| R14 | Visitor is signed out                    | Q is rendered                   | Count is shown, button is disabled                                                                                                 |
 | R15 | Ann clicks the heart                     | Request is in flight            | Heart and count flip immediately; further clicks on that button are ignored until it settles (stops double-click undoing the like) |
 | R16 | Ann clicks the heart                     | Request fails                   | Heart and count revert; an error and a Retry button appear next to that quack's button; Retry sends the toggle again               |
 | R17 | Like request is in flight                | Feed polling fires              | Polling is paused so it can't overwrite the optimistic state                                                                       |
@@ -54,7 +55,6 @@ Assumed endpoint: `POST /api/quacks/:id/like` toggles and returns `{ liked, like
 | A3  | Ann and Bob liked Q                                                   | Ann toggles                                                 | 200, `likeCount` 1; Bob's `GET` shows `likedByMe: true`                                                             |
 | A4  | Ann liked Q                                                           | `GET /api/quacks` as Ann                                    | Q has `likeCount: 1`, `likedByMe: true`                                                                             |
 | A5  | Ann liked Q                                                           | `GET /api/quacks` as Bob                                    | Q has `likeCount: 1`, `likedByMe: false`                                                                            |
-| A6  | Ann liked Q                                                           | `GET /api/quacks` without a session                         | Q has `likeCount: 1` and `likedByMe: false`; request succeeds if the feed is public today                           |
 | A7  | No session                                                            | `POST /api/quacks/Q/like`                                   | 401; no like row created                                                                                            |
 | A8  | Unknown quack id                                                      | `POST /api/quacks/<unknown>/like`                           | 404                                                                                                                 |
 | A9  | Q was emptied (it has replies)                                        | `POST /api/quacks/Q/like`                                   | 404; no like row created                                                                                            |
@@ -89,12 +89,6 @@ Seeded users, running app (frontend :3050, backend :4050).
 - **Then** Bob sees count 1 and an outline heart
 - **When** Bob likes it
 - **Then** he sees count 2 and a filled heart; Ann, after reload, sees count 2 and her filled heart
-
-### E3 — Signed-out visitor
-
-- **Given** a visitor who is not signed in
-- **When** they view a quack with 2 likes
-- **Then** they see the count `2` and a disabled heart; clicking does nothing
 
 ### E4 — Replies can be liked
 

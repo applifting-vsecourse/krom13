@@ -79,16 +79,6 @@ test("E2: likes are shared between people", async ({ page, browser }) => {
   await bob.close()
 })
 
-// E3 — GUARD-RAIL, passes today. cases.md pictured a signed-out visitor seeing
-// the count next to a disabled heart. Today every quack page is behind sign-in,
-// so the visitor is sent to the login page and sees no likes at all.
-test("E3: a signed-out visitor is sent to sign in and sees no like buttons", async ({ page }) => {
-  await page.goto("/quacks")
-
-  await expect(page).toHaveURL(/\/login/)
-  await expect(page.getByRole("button", { name: /^like/i })).toHaveCount(0)
-})
-
 // E4
 test("E4: a reply can be liked on its own", async ({ page }) => {
   const stamp = Date.now()

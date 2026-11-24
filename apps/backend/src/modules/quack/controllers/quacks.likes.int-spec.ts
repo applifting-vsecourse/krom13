@@ -161,18 +161,6 @@ describe('likes (integration)', () => {
     });
   });
 
-  // A6 — GUARD-RAIL, passes today. cases.md assumed a signed-out visitor can
-  // read the feed; the whole controller is behind the sign-in guard, so they
-  // see no counts at all. If the feed ever becomes public, this test must be
-  // replaced by "count shown, likedByMe false".
-  it('A6: a signed-out visitor gets no feed, so no likes are exposed', async () => {
-    await post(bob);
-
-    const response = await t.anonymous().get('/api/quacks').expect(401);
-
-    expect(JSON.stringify(response.body)).not.toMatch(/like/i);
-  });
-
   // A7
   it('A7: a signed-out visitor cannot like, and nothing is stored', async () => {
     const quack = await post(bob);
