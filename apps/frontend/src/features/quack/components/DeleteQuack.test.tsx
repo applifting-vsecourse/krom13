@@ -59,7 +59,7 @@ function renderFeed(server: () => Quack[], isModerator = false) {
 
 beforeEach(() => vi.resetAllMocks())
 
-describe("deleting a quack", () => {
+describe("deleting a quack test edit", () => {
   it("offers Delete on my quacks only", async () => {
     renderFeed(() => [quack("mine", "me"), quack("theirs", "other")])
 
