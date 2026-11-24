@@ -40,6 +40,7 @@ model Quack {
   // NULL once the quack is emptied.
   userId    String?
   poll      Poll?
+  likes     QuackLike[]
 
   // What this answers. NULL for a top-level quack.
   parent    Quack?    @relation("Replies", fields: [parentId], references: [id], onDelete: Restrict)
@@ -99,6 +100,19 @@ model PollVote {
   @@id([quackId, userId])
   @@index([quackId, optionId])
   @@map("poll_vote")
+}
+
+model QuackLike {
+  quackId   String
+  userId    String
+  quack     Quack    @relation(fields: [quackId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  // One person, one like per quack — enforced by the database.
+  @@id([quackId, userId])
+  @@index([userId])
+  @@map("quack_like")
 }
 
 model Session {
@@ -161,6 +175,7 @@ model User {
   accounts        Account[]
   quacks          Quack[]
   pollVotes       PollVote[]
+  quackLikes      QuackLike[]
   role            UserRole  @default(user)
 
   username        String? @db.VarChar(50)

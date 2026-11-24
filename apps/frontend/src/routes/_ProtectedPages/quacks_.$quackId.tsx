@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query"
+import { useIsMutating, useQuery } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { Loader2, RefreshCw } from "lucide-react"
 
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { HTTPError } from "@/lib/api-client"
 
 import { useSession } from "@/features/auth/hooks/useSession"
+import { quackKeys } from "@/features/quack/api/quackKeys"
 import { threadQueryOptions } from "@/features/quack/api/threadQueryOptions"
 import { ThreadView } from "@/features/quack/components/ThreadView"
 
@@ -20,7 +21,8 @@ export const Route = createFileRoute("/_ProtectedPages/quacks_/$quackId")({
 function ThreadPage() {
   const { quackId } = Route.useParams()
   const { user } = useSession()
-  const threadQuery = useQuery(threadQueryOptions(quackId))
+  const isLiking = useIsMutating({ mutationKey: quackKeys.like() }) > 0
+  const threadQuery = useQuery(threadQueryOptions(quackId, { isAutoRefresh: !isLiking }))
   const isMissing =
     threadQuery.error instanceof HTTPError && threadQuery.error.response.status === 404
 

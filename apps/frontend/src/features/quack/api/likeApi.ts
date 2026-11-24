@@ -1,7 +1,9 @@
-// Stub: the like call comes with the feature (docs/adr/0007-likes.md).
-export type LikeResult = { liked: boolean; likeCount: number }
+import { api } from "@/lib/api-client"
 
-// eslint-disable-next-line @typescript-eslint/require-await, @typescript-eslint/no-unused-vars
+import { likeResultSchema, type LikeResult } from "@/features/quack/api/quackSchemas"
+
+export type { LikeResult }
+
 export async function toggleLike(quackId: string): Promise<LikeResult> {
-  throw new Error("not implemented")
+  return likeResultSchema.parse(await api.post(`quacks/${quackId}/like`).json())
 }

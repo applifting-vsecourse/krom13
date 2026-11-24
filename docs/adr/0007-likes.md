@@ -44,6 +44,7 @@ Likes live in their own table, **one row per person per quack**, and the count i
 - **Feed cost.** Each page groups the likes of its quacks. Fine at this scale; if the feed grows, paginate first and only then consider a counter ([option 2](#options-considered)) — adding one later is additive.
 - **Toggle is not idempotent.** A retried request or a stale second tab flips the state back. The UI blocks double-clicks on a button while a request is in flight; the server can't tell a retry from a deliberate second click.
 - **Likes are anonymous in the API.** Only the count and the viewer's own state are returned, never names. A "who liked" list would be a new story but needs no schema change: the rows already hold it.
+- **The frontend treats `likeCount` and `likedByMe` as optional** and shows no like button for a quack that arrives without them. The server always sends both; the leniency keeps older component tests and fixtures valid. Make them required once those fixtures carry the fields.
 - **Deleting a user** removes their likes (and lowers the counts) through the cascade.
 - **The migration is additive**: one new table, no change to existing rows.
 - **Tests.** The guarantees live in Postgres, so the integration tests in `quacks.likes.int-spec.ts` prove the primary key, the concurrent toggle and the erase on emptying against the test database ([0006](0006-ci-test-layers.md)).

@@ -122,8 +122,16 @@ export class QuacksService {
     user: Identity,
     quackId: string,
   ): Promise<{ liked: boolean; likeCount: number }> {
-    void [user, quackId];
-    throw new Error('not implemented');
+    const result = await this.quackRepository.toggleLike(quackId, user.id);
+    switch (result.outcome) {
+      case 'quack_not_found':
+      case 'quack_deleted':
+        throw new NotFoundException('Quack not found');
+      case 'liked':
+        return { liked: true, likeCount: result.likeCount };
+      case 'unliked':
+        return { liked: false, likeCount: result.likeCount };
+    }
   }
 
   async vote(
