@@ -37,11 +37,12 @@ function QuacksPage() {
   const formRef = useRef<HTMLDivElement>(null)
   const [search, setSearch] = useState("")
   const debouncedSearch = useDebouncedValue(search, 300)
-  // Don't refresh the feed while a vote is in flight, or it could briefly
-  // undo the instant update.
+  // Don't refresh the feed while a vote or like is in flight, or it could
+  // briefly undo the instant update.
   const isVoting = useIsMutating({ mutationKey: quackKeys.vote() }) > 0
+  const isLiking = useIsMutating({ mutationKey: quackKeys.like() }) > 0
   const quacksQuery = useQuery(
-    quacksQueryOptions(debouncedSearch, { isAutoRefresh: !isVoting, tab }),
+    quacksQueryOptions(debouncedSearch, { isAutoRefresh: !isVoting && !isLiking, tab }),
   )
   const clearSearch = () => setSearch("")
   const writeQuack = () => formRef.current?.querySelector("textarea")?.focus()

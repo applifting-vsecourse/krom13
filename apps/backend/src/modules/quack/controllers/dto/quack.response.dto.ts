@@ -38,6 +38,12 @@ export class QuackResponseDto {
   @ApiProperty({ type: PollResponseDto, nullable: true })
   poll!: PollResponseDto | null;
 
+  @ApiProperty({ description: 'Counted from the like rows on every read' })
+  likeCount!: number;
+
+  @ApiProperty({ description: 'Whether the signed-in viewer liked it' })
+  likedByMe!: boolean;
+
   static fromDomain(quack: Quack): QuackResponseDto {
     if (!quack.user || !quack.userId) {
       throw new Error(
@@ -57,6 +63,8 @@ export class QuackResponseDto {
         username: quack.user.username,
       },
       poll: quack.poll ? PollResponseDto.fromDomain(quack.poll) : null,
+      likeCount: quack.likeCount ?? 0,
+      likedByMe: quack.likedByMe ?? false,
     };
   }
 }
@@ -109,6 +117,12 @@ export class ThreadItemDto {
   @ApiProperty({ type: PollResponseDto, nullable: true })
   poll!: PollResponseDto | null;
 
+  @ApiProperty({ description: 'Always 0 when deleted' })
+  likeCount!: number;
+
+  @ApiProperty({ description: 'Whether the signed-in viewer liked it' })
+  likedByMe!: boolean;
+
   static fromDomain(quack: Quack, thread: Quack[] = []): ThreadItemDto {
     const target =
       quack.parentId && quack.parentId !== quack.rootId
@@ -136,6 +150,8 @@ export class ThreadItemDto {
         : null,
       createdAt: quack.createdAt,
       poll: quack.poll ? PollResponseDto.fromDomain(quack.poll) : null,
+      likeCount: quack.likeCount ?? 0,
+      likedByMe: quack.likedByMe ?? false,
     };
   }
 }

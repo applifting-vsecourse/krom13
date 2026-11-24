@@ -25,6 +25,7 @@ import {
 } from '@nestjs/swagger';
 import { CreateQuackDto } from './dto/create-quack.dto';
 import { CreateReplyDto } from './dto/create-reply.dto';
+import { LikeResponseDto } from './dto/like.response.dto';
 import { ListQuacksQuery } from './dto/list-quacks.query';
 import { PollResponseDto } from './dto/poll.response.dto';
 import {
@@ -138,6 +139,23 @@ export class QuacksController {
   @ApiResponse({ status: 404, description: 'No such quack' })
   async remove(@User() user: Identity, @Param('id') id: string): Promise<void> {
     await this.quacksService.deleteQuack(user, id);
+  }
+
+  @Post(':id/like')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Like a quack or reply, or take your like back',
+    description:
+      'Flips your like: one call likes, the next one takes it back. A quack can be liked once per person.',
+  })
+  @ApiResponse({ status: 200, type: LikeResponseDto })
+  @ApiResponse({ status: 401, description: 'Not signed in' })
+  @ApiResponse({ status: 404, description: 'No such quack, or it was emptied' })
+  async like(
+    @User() user: Identity,
+    @Param('id') id: string,
+  ): Promise<LikeResponseDto> {
+    return this.quacksService.toggleLike(user, id);
   }
 
   @Put(':id/vote')

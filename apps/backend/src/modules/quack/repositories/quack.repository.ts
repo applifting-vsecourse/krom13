@@ -6,7 +6,12 @@ import {
   User as PrismaUser,
 } from '@/generated/prisma/client';
 import { buildPollResults } from '@/modules/quack/domain/poll';
-import { Mood, Quack, Thread } from '@/modules/quack/domain/quack';
+import {
+  Mood,
+  Quack,
+  Thread,
+  ToggleLikeResult,
+} from '@/modules/quack/domain/quack';
 import { Injectable } from '@nestjs/common';
 
 type PrismaQuackWithPoll = PrismaQuack & {
@@ -86,7 +91,10 @@ export class QuackRepository {
       include: { user: true, poll: { include: POLL_INCLUDE } },
       orderBy: { createdAt: 'desc' },
     });
-    return this.attachReplyCounts(await this.attachPolls(quacks, viewerId));
+    const withReplyCounts = await this.attachReplyCounts(
+      await this.attachPolls(quacks, viewerId),
+    );
+    return this.attachLikes(withReplyCounts, viewerId);
   }
 
   /**
@@ -102,7 +110,10 @@ export class QuackRepository {
       include: { user: true },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     });
-    const replies = rows.map((row) => mapPrismaQuackToDomain(row));
+    const replies = await this.attachLikes(
+      rows.map((row) => mapPrismaQuackToDomain(row)),
+      viewerId,
+    );
     return {
       quack: {
         ...quack,
@@ -118,8 +129,37 @@ export class QuackRepository {
       include: { user: true, poll: { include: POLL_INCLUDE } },
     });
     if (!quack) return null;
-    const [mapped] = await this.attachPolls([quack], viewerId);
+    const [mapped] = await this.attachLikes(
+      await this.attachPolls([quack], viewerId),
+      viewerId,
+    );
     return mapped;
+  }
+
+  /**
+   * Flips `userId`'s like. The quack row is locked FOR SHARE while we read it,
+   * so it can't be emptied between the check and the write; the primary key
+   * keeps two simultaneous toggles from storing two likes.
+   */
+  async toggleLike(quackId: string, userId: string): Promise<ToggleLikeResult> {
+    return this.prisma.$transaction(async (tx) => {
+      const quacks = await tx.$queryRaw<{ deletedAt: Date | null }[]>`
+        SELECT "deletedAt" FROM "quack" WHERE "id" = ${quackId} FOR SHARE`;
+      if (quacks.length === 0) return { outcome: 'quack_not_found' };
+      if (quacks[0].deletedAt) return { outcome: 'quack_deleted' };
+
+      const removed = await tx.quackLike.deleteMany({
+        where: { quackId, userId },
+      });
+      if (removed.count === 0) {
+        await tx.quackLike.createMany({
+          data: [{ quackId, userId }],
+          skipDuplicates: true,
+        });
+      }
+      const likeCount = await tx.quackLike.count({ where: { quackId } });
+      return { outcome: removed.count > 0 ? 'unliked' : 'liked', likeCount };
+    });
   }
 
   /** Deletes (or empties, see `removeOrEmpty`) the quack only when `userId` wrote it. */
@@ -158,6 +198,7 @@ export class QuackRepository {
 
       if ((await tx.quack.count({ where: { parentId: id } })) > 0) {
         await tx.poll.deleteMany({ where: { quackId: id } });
+        await tx.quackLike.deleteMany({ where: { quackId: id } });
         await tx.quack.update({
           where: { id },
           data: { text: '', mood: null, userId: null, deletedAt: new Date() },
@@ -244,6 +285,35 @@ export class QuackRepository {
     });
     const [mapped] = await this.attachPolls([quack], createQuackData.userId);
     return { ...mapped, replyCount: 0 };
+  }
+
+  /** Like counts for the whole page in one grouped query, the viewer's own likes in another. */
+  private async attachLikes(
+    quacks: Quack[],
+    viewerId: string,
+  ): Promise<Quack[]> {
+    if (quacks.length === 0) return quacks;
+    const quackIds = quacks.map((quack) => quack.id);
+    const [counts, mine] = await Promise.all([
+      this.prisma.quackLike.groupBy({
+        by: ['quackId'],
+        where: { quackId: { in: quackIds } },
+        _count: { _all: true },
+      }),
+      this.prisma.quackLike.findMany({
+        where: { quackId: { in: quackIds }, userId: viewerId },
+        select: { quackId: true },
+      }),
+    ]);
+    const countByQuack = new Map(
+      counts.map((count) => [count.quackId, count._count._all]),
+    );
+    const likedByViewer = new Set(mine.map((like) => like.quackId));
+    return quacks.map((quack) => ({
+      ...quack,
+      likeCount: countByQuack.get(quack.id) ?? 0,
+      likedByMe: likedByViewer.has(quack.id),
+    }));
   }
 
   /** One grouped count for the whole page — no query per quack. */

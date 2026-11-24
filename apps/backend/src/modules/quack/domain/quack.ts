@@ -26,7 +26,14 @@ export type Quack = {
   poll?: PollResults | null;
   // Live replies in the thread. Only filled in for top-level quacks.
   replyCount?: number;
+  // Counted from the like rows on every read (docs/adr/0007-likes.md).
+  likeCount?: number;
+  likedByMe?: boolean;
 };
+
+export type ToggleLikeResult =
+  | { outcome: 'liked' | 'unliked'; likeCount: number }
+  | { outcome: 'quack_not_found' | 'quack_deleted' };
 
 export type Thread = {
   quack: Quack;

@@ -7,6 +7,7 @@ import { MOOD_EMOJI } from "@/lib/moods"
 
 import type { ThreadItem } from "@/features/quack/api/quackSchemas"
 import { DeleteQuackDialog } from "@/features/quack/components/DeleteQuackDialog"
+import { LikeButton } from "@/features/quack/components/LikeButton"
 import { PollView } from "@/features/quack/components/PollView"
 import { UsersName } from "@/features/quack/components/UsersName"
 import { UsersUserName } from "@/features/quack/components/UsersUserName"
@@ -93,17 +94,26 @@ export function ThreadItemView({
             canClose={isMine}
           />
         ) : null}
-        {onReply ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="-ml-3 w-fit text-muted-foreground"
-            aria-label={`Reply to @${username}`}
-            onClick={onReply}
-          >
-            Reply
-          </Button>
-        ) : null}
+        <div className="flex flex-wrap items-center gap-2">
+          {item.likeCount === undefined ? null : (
+            <LikeButton
+              quackId={item.id}
+              likeCount={item.likeCount}
+              likedByMe={item.likedByMe ?? false}
+            />
+          )}
+          {onReply ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-fit text-muted-foreground"
+              aria-label={`Reply to @${username}`}
+              onClick={onReply}
+            >
+              Reply
+            </Button>
+          ) : null}
+        </div>
       </div>
 
       {canDelete ? (

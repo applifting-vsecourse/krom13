@@ -36,6 +36,8 @@ export const quackSchema = z.object({
   createdAt: z.coerce.date(),
   user: quackUserSchema,
   poll: pollSchema.nullable(),
+  likeCount: z.number().optional(),
+  likedByMe: z.boolean().optional(),
 })
 
 export const quacksSchema = z.array(quackSchema)
@@ -56,6 +58,8 @@ export const threadItemSchema = z.object({
   inReplyTo: z.object({ deleted: z.boolean(), username: z.string().nullable() }).nullable(),
   createdAt: z.coerce.date(),
   poll: pollSchema.nullable(),
+  likeCount: z.number().optional(),
+  likedByMe: z.boolean().optional(),
 })
 
 export const threadSchema = z.object({
@@ -67,3 +71,10 @@ export const threadSchema = z.object({
 
 export type ThreadItem = z.infer<typeof threadItemSchema>
 export type Thread = z.infer<typeof threadSchema>
+
+export const likeResultSchema = z.object({
+  liked: z.boolean(),
+  likeCount: z.number(),
+})
+
+export type LikeResult = z.infer<typeof likeResultSchema>

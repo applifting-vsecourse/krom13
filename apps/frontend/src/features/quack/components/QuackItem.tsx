@@ -8,6 +8,7 @@ import { MOOD_EMOJI } from "@/lib/moods"
 
 import type { Quack } from "@/features/quack/api/quackSchemas"
 import { DeleteQuackDialog } from "@/features/quack/components/DeleteQuackDialog"
+import { LikeButton } from "@/features/quack/components/LikeButton"
 import { PollView } from "@/features/quack/components/PollView"
 import { UsersName } from "@/features/quack/components/UsersName"
 import { UsersUserName } from "@/features/quack/components/UsersUserName"
@@ -74,21 +75,30 @@ export function QuackItem({
           />
         ) : null}
         {isPreview ? null : (
-          <Button
-            asChild
-            variant="ghost"
-            size="sm"
-            className="-ml-3 w-fit text-muted-foreground"
-          >
-            <Link
-              to="/quacks/$quackId"
-              params={{ quackId: quack.id }}
+          <div className="flex flex-wrap items-center gap-2">
+            {quack.likeCount === undefined ? null : (
+              <LikeButton
+                quackId={quack.id}
+                likeCount={quack.likeCount}
+                likedByMe={quack.likedByMe ?? false}
+              />
+            )}
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className="w-fit text-muted-foreground"
             >
-              {replyCount === 0
-                ? "Reply"
-                : `${replyCount} ${replyCount === 1 ? "reply" : "replies"}`}
-            </Link>
-          </Button>
+              <Link
+                to="/quacks/$quackId"
+                params={{ quackId: quack.id }}
+              >
+                {replyCount === 0
+                  ? "Reply"
+                  : `${replyCount} ${replyCount === 1 ? "reply" : "replies"}`}
+              </Link>
+            </Button>
+          </div>
         )}
       </div>
 
